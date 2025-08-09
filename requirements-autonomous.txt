@@ -1,5 +1,5 @@
-# requirements-autonomous.txt
-# Autonomous Research System Dependencies
+# requirements-autonomous-fixed.txt
+# Autonomous Research System Dependencies (Fixed)
 
 # Existing core requirements
 torch>=2.1.0
@@ -18,13 +18,13 @@ python-dotenv>=1.0.0
 selenium>=4.15.0
 webdriver-manager>=4.0.1
 beautifulsoup4>=4.12.0
-playwright>=1.40.0
+# playwright>=1.40.0  # Skip for now, can add later if needed
 
 # Computer/VM control
 docker>=6.1.0
 pyautogui>=0.9.54
 Pillow>=10.1.0
-python-xlib>=0.33  # For Linux screen control
+# python-xlib>=0.33  # Linux only, skip on Windows
 pynput>=1.7.6
 
 # Data visualization and analysis
@@ -39,40 +39,23 @@ aiofiles>=23.2.1
 
 # Security and safety
 cryptography>=41.0.7
-hashlib>=20081119  # Built-in, but good to specify
 validators>=0.22.0
 
-# OCR and image processing (for screen reading)
-pytesseract>=0.3.10
-opencv-python>=4.8.1.78
-
-# Audio processing (for voice control - future)
-speech-recognition>=3.10.0
-pyttsx3>=2.90
+# OCR and image processing (optional for now)
+# pytesseract>=0.3.10  # Requires Tesseract installation
+# opencv-python>=4.8.1.78  # Large download, add later if needed
 
 # Database for mission logging
-sqlite3  # Built-in
 sqlalchemy>=2.0.23
 
 # Configuration management
 pydantic>=2.5.0
-omegaconf>=2.3.0
 
 # Monitoring and logging
 loguru>=0.7.2
-psutil>=5.9.6  # System monitoring
-prometheus-client>=0.19.0
+psutil>=5.9.6
 
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-mock>=3.12.0
-
-# Development tools
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.7.0
-
-# Optional: Local model inference
-# llama-cpp-python>=0.2.20  # Uncomment if using local models
-# gguf>=0.1.0  # Uncomment if using GGUF models
