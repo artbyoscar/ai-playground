@@ -1,0 +1,11 @@
+# web/.streamlit/config.toml
+[theme]
+primaryColor = "#6366f1"  # Indigo
+backgroundColor = "#0f172a"  # Slate 900
+secondaryBackgroundColor = "#1e293b"  # Slate 800
+textColor = "#f1f5f9"  # Slate 100
+font = "sans serif"
+
+[server]
+headless = true
+port = 8501
