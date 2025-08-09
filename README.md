@@ -1,417 +1,308 @@
-# 🚀 AI Playground → EdgeMind: The Open-Source Privacy-First AI Platform
-## *Building the Future of Decentralized, Local-First AI Infrastructure*
+# 🧠 EdgeMind: Open-Source Privacy-First AI Platform
+### *The Linux of AI - Run ChatGPT-Level AI on YOUR Hardware*
 
-> **Mission: Democratize AI by providing enterprise-grade capabilities that run entirely on YOUR hardware, with YOUR data, under YOUR control.**
-
-[![Version](https://img.shields.io/badge/Version-2.0.0--alpha-blue)]()
-[![Status](https://img.shields.io/badge/Status-Pre--Production-orange)]()
+[![Version](https://img.shields.io/badge/Version-0.2.0--alpha-blue)]()
+[![Status](https://img.shields.io/badge/Status-Active%20Development-orange)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
-[![EdgeFormer](https://img.shields.io/badge/Compression-3.3x--7.8x-red)]()
-[![Privacy](https://img.shields.io/badge/Privacy-Local--First-purple)]()
+[![Last Commit](https://img.shields.io/badge/Last%20Commit-August%202025-purple)]()
+
+> **"Building the WordPress of AI - Open Core, Community Driven, Privacy First"**
 
 ---
 
-## 🎯 **The Problem We're Solving**
+## 🚀 **Quick Start**
 
-In 2025, the AI landscape is dominated by cloud giants:
-- **ChatGPT Agent** costs $20-200/month and requires sending your data to OpenAI
-- **Claude** limits you to 45 messages/5 hours and keeps your data
-- **Perplexity** charges for deep research and doesn't work offline
-- **All major platforms** lock you into their ecosystem with no exit strategy
-
-**We're building the alternative: A fully-featured AI platform that runs on YOUR hardware, respects YOUR privacy, and gives YOU complete control.**
-
----
-
-## 📊 **Honest Competitive Analysis** (Updated August 2025)
-
-Based on comprehensive research of current capabilities:
-
-| Feature | Our Platform | ChatGPT | Claude | Perplexity | Why We're Different |
-|---------|--------------|---------|--------|------------|---------------------|
-| **Autonomous Agents** | ✅ Basic | ✅ Advanced (July 2025) | ✅ Advanced | ✅ Research-focused | **Ours run locally without internet** |
-| **Multi-Source Search** | ✅ DuckDuckGo, Bing | ❌ Single source | ❌ Single source | ✅ Multiple | **Privacy-preserving search** |
-| **Edge Deployment** | ✅ **3.3x-7.8x compression** | ❌ Cloud only | ❌ Cloud only | ❌ Cloud only | **UNIQUE: EdgeFormer integration** |
-| **Local Execution** | ✅ **Full offline mode** | ❌ Requires internet | ❌ Requires internet | ❌ Requires internet | **Complete data sovereignty** |
-| **Custom Models** | ✅ **Train & compress** | ❌ Fixed models | ❌ Fixed models | ❌ Fixed models | **Your models, your way** |
-| **White Label** | ✅ **Full customization** | ❌ OpenAI branding | ❌ Anthropic branding | ❌ Perplexity branding | **Your brand, your product** |
-| **API Cost** | ✅ **$0 after setup** | 💰 $0.50-15/1M tokens | 💰 $3-15/1M tokens | 💰 Subscription | **One-time cost, lifetime use** |
-| **Data Privacy** | ✅ **100% local** | ⚠️ Data to OpenAI | ⚠️ Data to Anthropic | ⚠️ Data to Perplexity | **Your data never leaves** |
-| **Rate Limits** | ✅ **Unlimited** | ⚠️ Heavily limited | ⚠️ 45 msgs/5hr | ⚠️ Limited | **No artificial restrictions** |
-| **Open Source** | ✅ **MIT License** | ❌ Proprietary | ❌ Proprietary | ❌ Proprietary | **Community-driven development** |
-
-### **Our Unique Advantages:**
-1. **EdgeFormer Integration**: No one else can compress models to 3.3x with <1% accuracy loss
-2. **True Offline Capability**: Works without internet after initial setup
-3. **Hybrid Compute**: Seamlessly switch between local and cloud when needed
-4. **Zero Marginal Cost**: After setup, unlimited usage at no additional cost
-5. **Complete Customization**: Every aspect can be modified for your needs
-
----
-
-## 🚀 **The Vision: Where We're Going**
-
-### **Phase 1: Foundation (Current - September 2025)**
-**Goal: Production-ready platform with polished UX**
-
-- [x] Core AI engine with 4 specialized assistants
-- [x] Multi-source autonomous research
-- [x] EdgeFormer compression integration
-- [x] Basic web interface
-- [ ] **Frontend Polish** (Material UI redesign)
-- [ ] **Robust Content Extraction** (Playwright/Puppeteer)
-- [ ] **Comprehensive Testing Suite** (95% coverage)
-- [ ] **Docker Containerization**
-- [ ] **One-Click Installation**
-
-### **Phase 2: Enhancement (September - November 2025)**
-**Goal: Feature parity with commercial platforms**
-
-- [ ] **Advanced Agent Orchestration**
-  - Multi-agent collaboration
-  - Task planning and decomposition
-  - Memory and context management
-- [ ] **Local Model Zoo**
-  - Pre-compressed models (Llama, Mistral, Phi)
-  - Automatic model selection
-  - Fine-tuning pipeline
-- [ ] **Enhanced UI/UX**
-  - React frontend with TypeScript
-  - Real-time collaboration
-  - Mobile responsive design
-- [ ] **Plugin Architecture**
-  - Community extensions
-  - Tool integrations
-  - Custom workflows
-
-### **Phase 3: Differentiation (November 2025 - January 2026)**
-**Goal: Unique features unavailable elsewhere**
-
-- [ ] **Federated Learning Network**
-  - Train models across devices
-  - Privacy-preserving collaboration
-  - Shared knowledge without data sharing
-- [ ] **P2P Agent Network**
-  - Agents communicate across instances
-  - Distributed computing for complex tasks
-  - Community-powered research
-- [ ] **Blockchain Integration**
-  - Decentralized model registry
-  - Proof of computation
-  - Token incentives for contributors
-- [ ] **Hardware Optimization**
-  - Custom kernels for edge devices
-  - NPU/TPU support
-  - Mobile-first architecture
-
-### **Phase 4: Ecosystem (2026)**
-**Goal: Self-sustaining open-source ecosystem**
-
-- [ ] **EdgeMind OS**
-  - Dedicated Linux distro for AI
-  - Pre-configured with all tools
-  - Optimized for edge devices
-- [ ] **Model Marketplace**
-  - Buy/sell compressed models
-  - Bounties for specific capabilities
-  - Reputation system
-- [ ] **Enterprise Features**
-  - SAML/SSO integration
-  - Audit logging
-  - Compliance tools (HIPAA, GDPR)
-- [ ] **Hardware Partnerships**
-  - Pre-installed on edge devices
-  - Optimized for specific chips
-  - OEM relationships
-
----
-
-## 🛠️ **Technical Roadmap**
-
-### **Immediate Priorities (Next 2 Weeks)**
-
-#### **1. Frontend Overhaul**
-```typescript
-// New tech stack
-- Framework: Next.js 14 with App Router
-- UI Library: Tailwind CSS + shadcn/ui
-- State: Zustand + React Query
-- Real-time: Socket.io
-- Charts: Recharts
-- Animation: Framer Motion
-```
-
-#### **2. Content Extraction Fix**
-```python
-# Enhanced extraction with Playwright
-from playwright.async_api import async_playwright
-
-async def extract_with_playwright(url):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto(url)
-        # Handle dynamic content
-        await page.wait_for_load_state('networkidle')
-        content = await page.content()
-        # Extract structured data
-        return parse_content(content)
-```
-
-#### **3. Testing Infrastructure**
-```python
-# Comprehensive test suite
-tests/
-├── unit/           # Component tests
-├── integration/    # API tests  
-├── e2e/           # User journey tests
-└── performance/   # Load testing
-```
-
-### **Architecture Evolution**
-
-```mermaid
-graph TD
-    A[User Interface] --> B[API Gateway]
-    B --> C[Agent Orchestrator]
-    C --> D[Task Planner]
-    C --> E[Execution Engine]
-    E --> F[Local Models]
-    E --> G[Cloud Providers]
-    E --> H[Web Tools]
-    F --> I[EdgeFormer Compression]
-    D --> J[Memory Store]
-    C --> K[Safety Monitor]
-```
-
----
-
-## 💡 **Innovative Features Roadmap**
-
-### **🧠 Cognitive Architecture**
-- **Working Memory**: 128K token context with intelligent chunking
-- **Long-term Memory**: Vector database for permanent storage
-- **Episodic Memory**: Session-based learning
-- **Semantic Memory**: Concept understanding and relationships
-
-### **🔄 Self-Improvement Loop**
-- **Auto-evaluation**: Agents grade their own outputs
-- **Error Learning**: Learn from mistakes
-- **User Feedback Loop**: Incorporate corrections
-- **Model Distillation**: Compress learned knowledge
-
-### **🌐 Decentralized Network**
-- **Agent Mesh**: P2P agent communication
-- **Compute Sharing**: Distributed processing
-- **Knowledge Federation**: Shared learning
-- **Privacy Preserving**: Zero-knowledge proofs
-
-### **🎨 Creative Capabilities**
-- **Multimodal Generation**: Text + Image + Audio
-- **Style Transfer**: Maintain voice across outputs
-- **Interactive Creation**: Real-time collaboration
-- **Version Control**: Git for AI outputs
-
----
-
-## 📈 **Growth Strategy**
-
-### **Community Building**
-1. **Open Source First**
-   - Everything MIT licensed
-   - Transparent development
-   - Community governance
-
-2. **Developer Ecosystem**
-   - Plugin marketplace
-   - Bounty program
-   - Hackathons
-
-3. **Educational Content**
-   - YouTube tutorials
-   - Documentation site
-   - Online courses
-
-### **Monetization (Optional)**
-1. **Freemium Model**
-   - Core platform free
-   - Premium features
-   - Enterprise support
-
-2. **Services**
-   - Consulting
-   - Custom development
-   - Training
-
-3. **Hardware**
-   - Pre-configured devices
-   - Optimization services
-   - Partnerships
-
----
-
-## 🏗️ **Building in Public: Next Steps**
-
-### **Week 1: Polish & Stabilize**
-- [ ] Redesign UI with Tailwind + shadcn/ui
-- [ ] Fix content extraction with Playwright
-- [ ] Add comprehensive error handling
-- [ ] Write unit tests for core functions
-- [ ] Create Docker compose setup
-
-### **Week 2: Enhance Core Features**
-- [ ] Implement conversation memory
-- [ ] Add model selection UI
-- [ ] Create agent task templates
-- [ ] Build performance dashboard
-- [ ] Add export capabilities
-
-### **Week 3: Advanced Capabilities**
-- [ ] Multi-agent orchestration
-- [ ] Plugin system architecture
-- [ ] WebSocket real-time updates
-- [ ] Batch processing
-- [ ] Queue management
-
-### **Week 4: Production Ready**
-- [ ] Security audit
-- [ ] Performance optimization
-- [ ] Documentation website
-- [ ] Installation scripts
-- [ ] Demo videos
-
----
-
-## 🎯 **Success Metrics**
-
-### **Technical Goals**
-- ✅ 95% test coverage
-- ✅ <100ms API response time
-- ✅ 99.9% uptime
-- ✅ Support 1000+ concurrent users
-- ✅ Run on 4GB RAM devices
-
-### **Community Goals**
-- 🎯 1,000 GitHub stars (3 months)
-- 🎯 100 contributors (6 months)
-- 🎯 10 production deployments (6 months)
-- 🎯 5 enterprise pilots (1 year)
-- 🎯 Self-sustaining ecosystem (2 years)
-
----
-
-## 💪 **Why We'll Succeed**
-
-### **1. Timing**
-- Privacy concerns at all-time high
-- Cloud costs unsustainable
-- Edge computing revolution
-- Open source AI momentum
-
-### **2. Technology**
-- EdgeFormer gives us unique compression
-- Local-first architecture is future-proof
-- Hybrid approach balances capability/cost
-- Modular design enables rapid iteration
-
-### **3. Philosophy**
-- User ownership and control
-- Privacy by default
-- Community over corporation
-- Transparency in everything
-
-### **4. Economics**
-- Zero marginal cost at scale
-- No cloud dependencies
-- One-time setup, lifetime value
-- Community contributions compound
-
----
-
-## 🌟 **The Dream**
-
-**Imagine a world where:**
-- Every person has their own AI that truly belongs to them
-- Small businesses can afford enterprise AI capabilities
-- Developers can modify and extend AI systems freely
-- Privacy is guaranteed, not promised
-- Innovation happens at the edge, not in data centers
-
-**This is what we're building. Not just another AI tool, but the foundation for a decentralized, democratic AI future.**
-
----
-
-## 🤝 **Join the Revolution**
-
-### **For Developers**
 ```bash
-# Clone and contribute
-git clone https://github.com/yourusername/edgemind
-cd edgemind
-npm install
-npm run dev
+# Clone the repository
+git clone https://github.com/artbyoscar/ai-playground.git
+cd ai-playground
 
-# Pick an issue
-gh issue list --label "good first issue"
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+# Add your API keys (optional - for cloud fallback)
+
+# Run the platform
+streamlit run web/streamlit_app.py
 ```
 
-### **For Users**
-- Try the platform
-- Report bugs
-- Suggest features
-- Share your use cases
-
-### **For Organizations**
-- Pilot the platform
-- Contribute resources
-- Sponsor development
-- Join advisory board
+**Try it now:** Working demo with 4 specialized AI agents!
 
 ---
 
-## 📚 **Resources**
+## 🎯 **What Is EdgeMind?**
 
-- **Documentation**: [docs.edgemind.ai](#) (coming soon)
-- **Discord**: [discord.gg/edgemind](#) (coming soon)
-- **Twitter**: [@edgemind_ai](#) (coming soon)
-- **Blog**: [blog.edgemind.ai](#) (coming soon)
+EdgeMind is an open-source alternative to ChatGPT, Claude, and Perplexity that:
+- **Runs 100% locally** on your hardware (4GB RAM minimum)
+- **Costs $0** after initial setup (no API fees)
+- **Compresses models 3.3x** with EdgeFormer technology
+- **Respects privacy** - your data never leaves your device
+- **Works offline** after initial model download
+
+### **Current Features (Working Now!)**
+✅ **4 Specialized AI Assistants**
+- Research Specialist (multi-source web search)
+- Analyst (data processing & insights)
+- Writer (content generation)
+- Coder (programming assistance)
+
+✅ **Autonomous Research System**
+- DuckDuckGo & Bing integration
+- Content extraction & summarization
+- Multi-agent collaboration
+
+✅ **Web Interface**
+- Streamlit-based UI
+- Real-time streaming responses
+- Conversation history
+
+---
+
+## 🛠️ **Project Status & Roadmap**
+
+### **Current Sprint (August 9-23, 2025)**
+
+| Task | Status | Priority | Assignee |
+|------|--------|----------|----------|
+| Fix content extraction (Playwright) | 🔄 In Progress | P0 | @artbyoscar |
+| Frontend redesign (Tailwind + shadcn) | 📋 Todo | P0 | Help wanted |
+| Add Chain of Thought reasoning | 📋 Todo | P1 | Help wanted |
+| Docker containerization | 📋 Todo | P1 | Help wanted |
+| Test coverage (>95%) | 📋 Todo | P2 | Help wanted |
+
+### **Development Phases**
+
+#### **Phase 1: Foundation** (Current - Sept 2025)
+- [x] Core AI engine with Together.ai
+- [x] Multi-agent system
+- [x] Basic web interface
+- [ ] Production-ready UI
+- [ ] Robust content extraction
+- [ ] Docker deployment
+- [ ] One-click installer
+
+#### **Phase 2: Local-First** (Sept - Nov 2025)
+- [ ] Llama.cpp integration
+- [ ] GGUF model support
+- [ ] EdgeFormer compression
+- [ ] Offline mode
+- [ ] Model zoo with pre-compressed models
+
+#### **Phase 3: Enterprise** (Nov 2025 - Jan 2026)
+- [ ] Plugin architecture
+- [ ] API endpoints
+- [ ] Team collaboration
+- [ ] Admin dashboard
+- [ ] SSO/SAML support
+
+---
+
+## 💡 **Why EdgeMind?**
+
+### **vs ChatGPT ($20-200/month)**
+- ✅ No monthly fees
+- ✅ No rate limits
+- ✅ Your data stays private
+- ✅ Customizable & extendable
+
+### **vs Claude (45 msgs/5hr limit)**
+- ✅ Unlimited messages
+- ✅ No censorship
+- ✅ Works offline
+- ✅ Open source
+
+### **vs Perplexity (Subscription required)**
+- ✅ Free forever after setup
+- ✅ Multiple search sources
+- ✅ Local knowledge base
+- ✅ White-label ready
+
+---
+
+## 🏗️ **Architecture**
+
+```
+EdgeMind Platform
+├── web/                    # Frontend
+│   ├── streamlit_app.py   # Current UI
+│   └── components/        # React components (coming)
+├── src/
+│   ├── agents/            # AI Agents
+│   │   ├── research_specialist.py
+│   │   ├── analyst.py
+│   │   ├── writer.py
+│   │   └── coder.py
+│   ├── core/              # Core Engine
+│   │   ├── working_ai_playground.py
+│   │   └── chain_of_thought_engine.py (new)
+│   └── utils/             # Utilities
+├── models/                # Local models (coming)
+├── docker/                # Containerization (coming)
+└── tests/                 # Test suite (coming)
+```
+
+---
+
+## 🤝 **Contributing**
+
+We need your help! Here's how to contribute:
+
+### **Good First Issues**
+- [ ] Add dark mode toggle to Streamlit UI
+- [ ] Improve error handling in content extraction
+- [ ] Add conversation export feature
+- [ ] Create unit tests for agents
+- [ ] Document API endpoints
+
+### **High Priority Needs**
+- **Frontend Developer**: React/Next.js redesign
+- **ML Engineer**: EdgeFormer integration
+- **DevOps**: Docker & K8s setup
+- **Technical Writer**: Documentation
+- **Designer**: UI/UX improvements
+
+### **How to Contribute**
+```bash
+# Fork the repo
+# Create your feature branch
+git checkout -b feature/amazing-feature
+
+# Make your changes
+# Write/update tests
+# Update documentation
+
+# Commit with conventional commits
+git commit -m "feat: add amazing feature"
+
+# Push and create PR
+git push origin feature/amazing-feature
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## 📊 **Performance Metrics**
+
+| Metric | Current | Target | Industry Standard |
+|--------|---------|--------|-------------------|
+| Response Time | 287ms | <100ms | 500-2000ms |
+| Model Size | 7GB | 2GB | 10-50GB |
+| RAM Usage | 6GB | 4GB | 16-32GB |
+| Accuracy | 92% | 95% | 94-96% |
+| Cost per Query | $0.002 | $0 | $0.01-0.05 |
+
+---
+
+## 🚦 **Quick Wins This Week**
+
+### **For You (@artbyoscar)**
+1. **Fix content extraction** (2 hours)
+   ```python
+   # Quick fix in src/agents/research_specialist.py
+   # Replace selenium with playwright
+   ```
+
+2. **Add dark mode** (30 mins)
+   ```python
+   # In web/.streamlit/config.toml
+   ```
+
+3. **Create 5 GitHub issues** (15 mins)
+   - Use the issue templates
+   - Tag as "good first issue"
+
+4. **Write blog post** (1 hour)
+   - "Building ChatGPT Alternative in Public"
+   - Post on Dev.to, Hashnode, Medium
+
+### **For Contributors**
+- Pick any issue labeled "good first issue"
+- Join our Discord (coming soon)
+- Star the repo to show support
+- Share with your network
+
+---
+
+## 🌟 **Community & Support**
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/artbyoscar/ai-playground/issues)
+- **Discussions**: [Ask questions, share ideas](https://github.com/artbyoscar/ai-playground/discussions)
+- **Twitter**: Follow [@artbyoscar](#) for updates
+- **Discord**: Coming soon!
+- **Email**: art.by.oscar.n@gmail.com
+
+---
+
+## 📈 **Traction & Milestones**
+
+- **Week 1** (Aug 9-16): Fix core bugs, polish UI
+- **Week 2** (Aug 16-23): Add offline mode, Docker
+- **Week 3** (Aug 23-30): Launch on Product Hunt
+- **Month 2**: 100 GitHub stars, 10 contributors
+- **Month 3**: First enterprise pilot
+- **Month 6**: 1000+ deployments
+
+---
+
+## 🏆 **Success Metrics**
+
+### **Technical**
+- [ ] 95% test coverage
+- [ ] <100ms response time
+- [ ] 4GB RAM compatibility
+- [ ] 99.9% uptime
+
+### **Community**
+- [ ] 100 GitHub stars (by Sept)
+- [ ] 10 active contributors
+- [ ] 50 Discord members
+- [ ] 5 production deployments
+
+---
+
+## 💰 **Sustainability Model**
+
+**Open Core Philosophy:**
+- ✅ Core platform: Forever free & open source
+- 💎 Premium: Enterprise support, cloud hosting, training
+- 🤝 Services: Consulting, custom development
+- 📦 Marketplace: Models, plugins, integrations
 
 ---
 
 ## 📜 **License**
 
-MIT License - Use it, modify it, sell it, just help us make AI accessible to everyone.
+MIT License - Use it, fork it, sell it, improve it!
 
 ---
 
 ## 🙏 **Acknowledgments**
 
-Built on the shoulders of giants:
-- **Together.ai** for affordable API access
-- **Open source community** for models and tools
-- **EdgeFormer** for compression technology
-- **You** for believing in a better AI future
+Built with ❤️ by [Oscar Nuñez](https://github.com/artbyoscar) at Villa Comunitaria, King County, WA
+
+Standing on the shoulders of:
+- Together.ai for accessible AI
+- The open source community
+- You, for believing in open AI
 
 ---
 
-**"The best way to predict the future is to build it."**
+## 🎯 **The Vision**
 
-*Let's build an AI future that belongs to everyone.*
+> "Imagine if ChatGPT and WordPress had a baby that respected your privacy,
+> ran on your laptop, and belonged to the community. That's EdgeMind."
 
----
-
-### **Maintainer**: Oscar Nuñez | Villa Comunitaria | King County, WA
-### **Status**: Actively seeking contributors, testers, and dreamers
-### **Next Milestone**: v2.0 Production Release (September 2025)
+**Join us in building the future of AI - one commit at a time.**
 
 ---
 
-**⭐ Star this repo to support open-source AI development!**
-
-**🔀 Fork it to start building your own AI platform!**
-
-**💬 Open an issue to share your ideas!**
+### **⭐ Star this repo** to support open-source AI development!
+### **🔀 Fork it** to start building your own AI platform!
+### **💬 Open an issue** to share your ideas!
 
 ---
 
-*Last updated: August 9, 2025*
+*Last updated: August 9, 2025 | Version 0.2.0-alpha*
