@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ai-env/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Project specific
+*.log
+*.db
+*.sqlite
+models/*.bin
+models/*.gguf
+data/cache/
+temp/
+tmp/
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Environment
+.env.local
+.env.*.local
+
+# Node (if using for frontend later)
+node_modules/
+npm-debug.log
+yarn-error.log
