@@ -26,59 +26,59 @@ function Show-Help {
 
 function Install-Dependencies {
     Write-Host "Installing dependencies..." -ForegroundColor Yellow
-    & "$VenvPath\activate.ps1"
-    pip install -r requirements_core.txt
-    pip install fastapi uvicorn redis streamlit
-    Write-Host "✅ Dependencies installed!" -ForegroundColor Green
+    & "$VenvPath\python.exe" -m pip install --upgrade pip
+    & "$VenvPath\pip.exe" install -r requirements_core.txt
+    & "$VenvPath\pip.exe" install fastapi uvicorn redis streamlit
+    Write-Host "Dependencies installed!" -ForegroundColor Green
 }
 
 function Start-API {
     Write-Host "Starting FastAPI..." -ForegroundColor Yellow
-    & "$VenvPath\activate.ps1"
-    uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+    & "$VenvPath\python.exe" -m uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 }
 
 function Start-UI {
     Write-Host "Starting Streamlit UI..." -ForegroundColor Yellow
-    & "$VenvPath\activate.ps1"
-    streamlit run web/streamlit_app.py
+    & "$VenvPath\python.exe" -m streamlit run web/streamlit_app.py
 }
 
 function Start-Both {
     Write-Host "Starting both services..." -ForegroundColor Yellow
     
     # Start API in new window
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ProjectRoot'; .\ai-env\Scripts\activate; uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000"
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ProjectRoot'; & '$VenvPath\python.exe' -m uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000"
+    
+    # Give API time to start
+    Start-Sleep -Seconds 2
     
     # Start UI in new window
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ProjectRoot'; .\ai-env\Scripts\activate; streamlit run web/streamlit_app.py"
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ProjectRoot'; & '$VenvPath\python.exe' -m streamlit run web/streamlit_app.py"
     
-    Write-Host "✅ Services starting in new windows!" -ForegroundColor Green
-    Write-Host "📺 Streamlit UI: http://localhost:8501" -ForegroundColor Cyan
-    Write-Host "🚀 FastAPI: http://localhost:8000" -ForegroundColor Cyan
-    Write-Host "📊 API Docs: http://localhost:8000/docs" -ForegroundColor Cyan
+    Write-Host "Services starting in new windows!" -ForegroundColor Green
+    Write-Host "Streamlit UI: http://localhost:8501" -ForegroundColor Cyan
+    Write-Host "FastAPI: http://localhost:8000" -ForegroundColor Cyan
+    Write-Host "API Docs: http://localhost:8000/docs" -ForegroundColor Cyan
 }
 
 function Start-Docker {
     Write-Host "Building and starting Docker containers..." -ForegroundColor Yellow
     docker-compose build
     docker-compose up -d
-    Write-Host "✅ Docker containers started!" -ForegroundColor Green
-    Write-Host "📺 Streamlit UI: http://localhost:8501" -ForegroundColor Cyan
-    Write-Host "🚀 FastAPI: http://localhost:8000" -ForegroundColor Cyan
+    Write-Host "Docker containers started!" -ForegroundColor Green
+    Write-Host "Streamlit UI: http://localhost:8502" -ForegroundColor Cyan
+    Write-Host "FastAPI: http://localhost:8000" -ForegroundColor Cyan
 }
 
 function Clean-Docker {
     Write-Host "Cleaning Docker containers..." -ForegroundColor Yellow
     docker-compose down -v
     docker system prune -f
-    Write-Host "✅ Cleaned!" -ForegroundColor Green
+    Write-Host "Cleaned!" -ForegroundColor Green
 }
 
 function Run-Tests {
     Write-Host "Running tests..." -ForegroundColor Yellow
-    & "$VenvPath\activate.ps1"
-    pytest tests/ -v
+    & "$VenvPath\python.exe" -m pytest tests/ -v
 }
 
 # Execute command
