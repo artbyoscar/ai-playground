@@ -374,7 +374,6 @@ def integrate_edgeformer_with_playground():
         edgeformer_path = input("\nEnter EdgeFormer directory path (or press Enter to skip): ")
         if edgeformer_path and Path(edgeformer_path).exists():
             # Update the path and reload
-            global EDGEFORMER_PATH
             EDGEFORMER_PATH = Path(edgeformer_path)
             print("✅ EdgeFormer path updated!")
     
