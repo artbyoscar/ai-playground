@@ -1,0 +1,25 @@
+﻿# Core AI (only what you need)
+torch>=2.1.0
+transformers>=4.36.0
+sentence-transformers>=2.2.2
+accelerate>=0.25.0
+
+# Local inference
+llama-cpp-python>=0.2.20
+
+# Vector DB
+chromadb>=0.4.0
+
+# Web & API
+streamlit>=1.28.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# Data
+pandas>=2.1.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Dev tools
+jupyter>=1.0.0
+pytest>=7.4.0

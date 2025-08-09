@@ -1,0 +1,27 @@
+﻿# Python
+__pycache__/
+*.pyc
+ai-env/
+venv/
+.env
+
+# Models & Data
+models/downloads/*
+!models/downloads/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+*.bin
+*.safetensors
+*.gguf
+
+# Logs
+*.log
+data/logs/*
+
+# IDE
+.vscode/settings.json
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
