@@ -6,7 +6,7 @@ This gives your AI access to documents, Wikipedia, and more
 
 import chromadb
 from chromadb.utils import embedding_functions
-import wikipedia
+import wikipediaapi
 import requests
 from pathlib import Path
 from typing import List, Dict, Any
