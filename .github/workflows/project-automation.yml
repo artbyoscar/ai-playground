@@ -1,0 +1,17 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [opened, closed, reopened]
+  pull_request:
+    types: [opened, closed, reopened, review_requested]
+
+jobs:
+  automate-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to project
+        uses: actions/add-to-project@v0.3.0
+        with:
+          project-url: https://github.com/users/YOUR_USERNAME/projects/YOUR_PROJECT_NUMBER
+          github-token: ${{ secrets.GITHUB_TOKEN }}
