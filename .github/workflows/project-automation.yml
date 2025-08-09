@@ -1,5 +1,4 @@
 name: Project Board Automation
-
 on:
   issues:
     types: [opened, closed, reopened]
@@ -11,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add to project
-        uses: actions/add-to-project@v0.3.0
+        uses: actions/add-to-project@v0.5.0  # Updated version
         with:
-          project-url: https://github.com/users/YOUR_USERNAME/projects/YOUR_PROJECT_NUMBER
+          project-url: https://github.com/users/artbyoscar/projects/1  # Update with your project number
           github-token: ${{ secrets.GITHUB_TOKEN }}
