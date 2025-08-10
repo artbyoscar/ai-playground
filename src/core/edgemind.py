@@ -360,11 +360,25 @@ class EdgeMind:
         """
         start_time = time.time()
         
-        # Adjust parameters for better responses
+        # Basic safety check for dangerous queries
+        dangerous_keywords = [
+            "bomb", "explosive", "weapon", "kill", "murder", "suicide",
+            "terrorism", "make meth", "synthesize drugs", "poison"
+        ]
+        
+        if any(keyword in prompt.lower() for keyword in dangerous_keywords):
+            self._log("⚠️ Potentially dangerous query detected")
+            return "I cannot and will not provide information about creating weapons, explosives, or other dangerous items. If you're interested in chemistry or engineering, I'd be happy to discuss safe and legal topics instead."
+        
+        # Adjust parameters for TinyLlama but respect user's temperature if explicitly set
         if self.model_type == ModelType.TINYLLAMA:
-            max_tokens = min(max_tokens, 150)  # Limit TinyLlama responses
-            temperature = min(temperature, 0.3)  # Lower temperature for coherence
-            self._log(f"🎯 Adjusted params: max_tokens={max_tokens}, temp={temperature}")
+            max_tokens = min(max_tokens, 100)  # Limit TinyLlama responses
+            # Only override temperature if it's the default 0.7
+            if temperature == 0.7:
+                temperature = 0.3  # Better default for TinyLlama
+                self._log(f"🎯 Adjusted params: max_tokens={max_tokens}, temp={temperature}")
+            else:
+                self._log(f"🎯 Using user settings: max_tokens={max_tokens}, temp={temperature}")
         
         # RAG enhancement
         if use_rag and self.rag_system:
@@ -376,7 +390,7 @@ class EdgeMind:
             except Exception as e:
                 self._log(f"⚠️ RAG error: {e}")
         
-        # Safety check
+        # Safety check with existing system if available
         if safety_check and self.safety_system:
             try:
                 if not self.safety_system.is_safe(prompt):
@@ -395,18 +409,37 @@ class EdgeMind:
                 # Define stop tokens based on model
                 stop_tokens = self._get_stop_tokens()
                 
+                # Add repetition penalty for TinyLlama
+                repeat_penalty = 1.1 if self.model_type == ModelType.TINYLLAMA else 1.0
+                
                 response = self.model(
                     formatted_prompt,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     stream=stream,
                     stop=stop_tokens,
-                    echo=False  # Don't echo the prompt
+                    echo=False,  # Don't echo the prompt
+                    repeat_penalty=repeat_penalty,  # Reduce repetition
+                    top_p=0.95,  # Nucleus sampling
+                    top_k=40  # Limit vocabulary
                 )
                 text = response["choices"][0]["text"]
                 
                 # Clean up response
                 text = self._clean_response(text)
+                
+                # Check for repetitive patterns
+                words = text.split()
+                if len(words) > 10:
+                    # Check if phrase is repeating
+                    for i in range(3, min(10, len(words)//2)):
+                        chunk = " ".join(words[:i])
+                        if text.count(chunk) > 2:
+                            # Cut off at first repetition
+                            text = chunk
+                            self._log("✂️ Trimmed repetitive output")
+                            break
+                
             else:
                 # Fallback to mock or API
                 response = self.model(formatted_prompt, max_tokens=max_tokens)
