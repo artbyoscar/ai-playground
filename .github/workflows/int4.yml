@@ -1,0 +1,44 @@
+name: int4-cpu
+on:
+  push: { paths: ['src/kernels/cpu/int4/**', 'tools/quant/**', '.github/workflows/int4.yml'] }
+  pull_request: { paths: ['src/kernels/cpu/int4/**', 'tools/quant/**'] }
+
+jobs:
+  win-build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LLVM, CMake, Ninja, Python
+        uses: chocolatemoose/setup-cpp@v1
+        with:
+          cmake: true
+          ninja: true
+          compiler: llvm
+
+      - name: Python deps
+        uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python -m pip install -U pip numpy
+
+      - name: Configure
+        working-directory: src/kernels/cpu/int4
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+
+      - name: Build
+        working-directory: src/kernels/cpu/int4
+        run: cmake --build build --config Release -v
+
+      - name: Correctness
+        working-directory: src/kernels/cpu/int4
+        run: ctest --test-dir build -R correctness -V
+
+      - name: Perf JSON
+        working-directory: src/kernels/cpu/int4
+        run: .\build\test_qgemm_perf_vs_baseline.exe --M 256 --N 256 --K 2048 --it 5 --json perf.json
+
+      - name: Upload perf
+        uses: actions/upload-artifact@v4
+        with:
+          name: int4-perf
+          path: src/kernels/cpu/int4/perf.json
