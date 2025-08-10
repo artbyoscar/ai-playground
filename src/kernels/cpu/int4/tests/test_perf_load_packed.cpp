@@ -1,16 +1,21 @@
 #include "../qgemm_int4.h"
 #include "../pack_loader.h"
+
 #include <vector>
 #include <random>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <fstream>
+#include <string>
+#include <cstdint>
 
 static double ms_since(std::chrono::high_resolution_clock::time_point t0){
   using namespace std::chrono;
   return duration<double, std::milli>(high_resolution_clock::now()-t0).count();
 }
+
 static inline uint16_t f2h(float f){
   uint32_t x; std::memcpy(&x,&f,sizeof(x));
   uint32_t sign=(x>>16)&0x8000u;
@@ -24,18 +29,33 @@ static inline uint16_t f2h(float f){
   if(mant&0x00001000u) half+=1u; return (uint16_t)half;
 }
 
+static void write_json(const std::string& path,
+                       int M,int N,int K,int it,
+                       double st_ms,double mt_ms,double tmt_ms)
+{
+  std::ofstream f(path, std::ios::binary);
+  if(!f) return;
+  f << "{"
+    << "\"M\":"<<M<<",\"N\":"<<N<<",\"K\":"<<K<<",\"it\":"<<it<<","
+    << "\"st_ms\":"<<st_ms<<",\"mt_ms\":"<<mt_ms<<",\"tmt_ms\":"<<tmt_ms
+    << "}\n";
+}
+
 int main(int argc, char** argv){
   const char* prefix = "pack/q4edge";
   int M = 256, it = 5;
+  std::string json_out;
+
   for(int i=1;i<argc;++i){
     if(!std::strcmp(argv[i],"--packed") && i+1<argc) prefix = argv[++i];
     else if(!std::strcmp(argv[i],"--M") && i+1<argc) M = std::atoi(argv[++i]);
     else if(!std::strcmp(argv[i],"--it")&& i+1<argc) it= std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--json")&& i+1<argc) json_out = argv[++i];
   }
 
   auto pb = load_q4edge_packed(prefix);
   int K = pb.K, N = pb.N, G = pb.group;
-  printf("Loaded packed B: K=%d N=%d group=%d\n", K,N,G);
+  std::printf("Loaded packed B: K=%d N=%d group=%d\n", K,N,G);
 
   // Random A (M x K) -> fp16
   std::mt19937 rng(42);
@@ -54,19 +74,28 @@ int main(int argc, char** argv){
       double ms = ms_since(t1);
       best = std::min(best, ms);
     }
-    printf("  %-6s : %.3f ms  (%.2f GFLOP/s)\n", name, best, (2.0*M*N*K/1e9)/(best/1000.0));
+    std::printf("  %-6s : %.3f ms  (%.2f GFLOP/s)\n", name, best, gflop/(best/1000.0));
     return best;
   };
 
-  printf("Perf vs packed: M=%d N=%d K=%d it=%d\n",M,N,K,it);
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+  std::printf("Perf vs packed: M=%d N=%d K=%d it=%d\n",M,N,K,it);
+  const int threads = std::min(N, 8);
+
+  double st_best = bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
     qgemm_int4_fp16(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G);
   },"st");
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
-    qgemm_int4_fp16_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, std::min(N, 8));
+
+  double mt_best = bench([&](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+    qgemm_int4_fp16_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, threads);
   },"mt");
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
-    qgemm_int4_fp16_tiled_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, std::min(N, 8), 8);
+
+  double tmt_best = bench([&](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+    qgemm_int4_fp16_tiled_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, threads, 8);
   },"tmt");
+
+  if (!json_out.empty()){
+    write_json(json_out, M,N,K,it, st_best, mt_best, tmt_best);
+  }
+
   return 0;
 }

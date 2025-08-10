@@ -8,6 +8,9 @@
 #include <cmath>
 #include <algorithm>
 #include <cstring>
+#include <fstream>
+#include <string>
+#include <cstdint>
 
 // forward decl for the optional M-blocked kernel we added in qgemm_int4.cpp
 void qgemm_int4_fp16_tiled_mt_mblocked(
@@ -26,18 +29,49 @@ static void gemm_f32_ref(const float* A,const float* B,float* C,int M,int N,int 
     }
   }
 }
+
 static double ms_since(std::chrono::high_resolution_clock::time_point t0){
   using namespace std::chrono;
   return duration<double, std::milli>(high_resolution_clock::now()-t0).count();
 }
 
+static inline uint16_t f2h(float f){
+  uint32_t x; std::memcpy(&x,&f,sizeof(x));
+  uint32_t sign=(x>>16)&0x8000u;
+  int32_t  exp =(int32_t)((x>>23)&0xFF)-127+15;
+  uint32_t mant=x&0x7FFFFFu;
+  if(exp<=0){ if(exp<-10) return (uint16_t)sign; mant|=0x800000u;
+    uint32_t t = mant >> (1-exp+13);
+    if((mant>>(1-exp+12))&1u) t+=1u; return (uint16_t)(sign|t);
+  } else if(exp>=31){ return (uint16_t)(sign|0x7BFFu); }
+  uint32_t half=sign|((uint32_t)exp<<10)|(mant>>13);
+  if(mant&0x00001000u) half+=1u; return (uint16_t)half;
+}
+
+static void write_json(const std::string& path,
+                       int M,int N,int K,int it,
+                       double st_ms,double mt_ms,double tmt_ms,
+                       double tmt_m_ms, bool have_tmt_m)
+{
+  std::ofstream f(path, std::ios::binary);
+  if(!f) return;
+  f << "{"
+    << "\"M\":"<<M<<",\"N\":"<<N<<",\"K\":"<<K<<",\"it\":"<<it<<","
+    << "\"st_ms\":"<<st_ms<<",\"mt_ms\":"<<mt_ms<<",\"tmt_ms\":"<<tmt_ms;
+  if (have_tmt_m) f << ",\"tmt_m_ms\":"<<tmt_m_ms;
+  f << "}\n";
+}
+
 int main(int argc,char**argv){
   int M=256,N=256,K=2048, it=5;
+  std::string json_out;
+
   for(int i=1;i<argc;++i){
     if(!std::strcmp(argv[i],"--M") && i+1<argc) M=std::atoi(argv[++i]);
     else if(!std::strcmp(argv[i],"--N") && i+1<argc) N=std::atoi(argv[++i]);
     else if(!std::strcmp(argv[i],"--K") && i+1<argc) K=std::atoi(argv[++i]);
     else if(!std::strcmp(argv[i],"--it")&& i+1<argc) it=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--json")&& i+1<argc) json_out = argv[++i];
   }
 
   std::printf("Perf vs baseline: M=%d N=%d K=%d it=%d\n",M,N,K,it);
@@ -70,18 +104,6 @@ int main(int argc,char**argv){
   }
 
   // A -> fp16
-  auto f2h = [](float f)->uint16_t{
-    uint32_t x; std::memcpy(&x,&f,sizeof(x));
-    uint32_t sign=(x>>16)&0x8000u;
-    int32_t  exp =(int32_t)((x>>23)&0xFF)-127+15;
-    uint32_t mant=x&0x7FFFFFu;
-    if(exp<=0){ if(exp<-10) return (uint16_t)sign; mant|=0x800000u;
-      uint32_t t = mant >> (1-exp+13);
-      if((mant>>(1-exp+12))&1u) t+=1u; return (uint16_t)(sign|t);
-    } else if(exp>=31){ return (uint16_t)(sign|0x7BFFu); }
-    uint32_t half=sign|((uint32_t)exp<<10)|(mant>>13);
-    if(mant&0x00001000u) half+=1u; return (uint16_t)half;
-  };
   std::vector<uint16_t> Ah(M*K);
   for(int i=0;i<M*K;++i) Ah[i]=f2h(A[i]);
 
@@ -100,24 +122,29 @@ int main(int argc,char**argv){
     return best;
   };
 
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+  const int threads = std::min(N, 8);
+  double st_best = bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
     qgemm_int4_fp16(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G);
   },"st");
 
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
-    qgemm_int4_fp16_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, std::min(N, 8));
+  double mt_best = bench([&](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+    qgemm_int4_fp16_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, threads);
   },"mt");
 
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+  double tmt_best = bench([&](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
     qgemm_int4_fp16_tiled_mt(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G,
-                             std::min(N, 8), 8);
+                             threads, 8);
   },"tmt");
 
   // new: tmt + m-blocking
-  bench([](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
+  double tmt_m_best = bench([&](auto*Ah,int lda,auto*Bp,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G){
     qgemm_int4_fp16_tiled_mt_mblocked(Ah, lda, (const uint8_t*)Bp, (const uint16_t*)Sc, ldb,
-                                      Ch, ldc, M,N,K,G, std::min(N, 8), 8, 4);
+                                      Ch, ldc, M,N,K,G, threads, 8, 4);
   },"tmt+m");
+
+  if (!json_out.empty()){
+    write_json(json_out, M,N,K,it, st_best, mt_best, tmt_best, tmt_m_best, /*have_tmt_m=*/true);
+  }
 
   return 0;
 }
