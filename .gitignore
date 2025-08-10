@@ -45,3 +45,7 @@ src/kernels/cpu/int4/B.npy
 # OS
 .DS_Store
 Thumbs.db
+# Third-party SDK binaries (downloaded on demand)
+third_party/**/*
+!third_party/.gitkeep
+!third_party/**/README.md
