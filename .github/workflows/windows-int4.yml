@@ -1,0 +1,41 @@
+name: windows-int4
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        shell: pwsh
+        run: |
+          choco install -y llvm ninja
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Hydrate third-party SDKs
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts/fetch_third_party.ps1
+      - name: Configure + build
+        shell: pwsh
+        run: |
+          cmake -S src/kernels/cpu/int4 -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build --config Release -v
+      - name: Correctness
+        shell: pwsh
+        run: ctest --test-dir build -R correctness -V
+      - name: Perf JSON
+        shell: pwsh
+        run: |
+          .\build\test_qgemm_perf_vs_baseline.exe --M 256 --N 256 --K 2048 --it 3 --json perf_baseline.json
+          if (Test-Path build\test_perf_load_packed.exe) {
+            .\build\test_perf_load_packed.exe --packed src\kernels\cpu\int4\pack\q4edge --M 256 --it 3 --json perf_packed.json
+          }
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: int4-perf
+          path: |
+            perf_baseline.json
+            perf_packed.json
