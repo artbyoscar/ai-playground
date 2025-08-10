@@ -140,6 +140,9 @@ class EdgeMind:
         self.safety_system = None
         self.gpt_oss = None
         
+        # Conversation history for context
+        self.conversation_history = []
+        
         # Performance tracking
         self.metrics = {
             "total_tokens": 0,
@@ -301,11 +304,40 @@ class EdgeMind:
         
         return MockModel()
     
+    def format_prompt_for_tinyllama(self, prompt: str) -> str:
+        """
+        Format prompt properly for TinyLlama chat model.
+        TinyLlama expects a specific format for coherent responses.
+        """
+        return f"<|system|>\nYou are a helpful, respectful and honest assistant.\n<|user|>\n{prompt}\n<|assistant|>\n"
+    
+    def format_prompt(self, prompt: str, model_type: Optional[ModelType] = None) -> str:
+        """
+        Format prompt based on model type for better responses.
+        Different models expect different prompt formats.
+        """
+        model_type = model_type or self.model_type
+        
+        if model_type == ModelType.TINYLLAMA:
+            return self.format_prompt_for_tinyllama(prompt)
+        elif model_type == ModelType.MISTRAL:
+            # Mistral format
+            return f"<s>[INST] {prompt} [/INST]"
+        elif model_type == ModelType.PHI2:
+            # Phi-2 format
+            return f"Instruct: {prompt}\nOutput:"
+        elif model_type == ModelType.CODELLAMA:
+            # CodeLlama format
+            return f"[INST] {prompt} [/INST]"
+        else:
+            # Default format
+            return prompt
+    
     def generate(
         self,
         prompt: str,
         max_tokens: int = 256,
-        temperature: float = 0.7,
+        temperature: float = 0.3,
         stream: bool = False,
         use_rag: bool = False,
         safety_check: bool = True
@@ -344,11 +376,16 @@ class EdgeMind:
             except Exception as e:
                 self._log(f"⚠️ Safety check error: {e}")
         
+        # Format prompt for specific model if needed
+        formatted_prompt = self.format_prompt(prompt)
+        if formatted_prompt != prompt:
+            self._log(f"📝 Applied {self.model_type.value} prompt formatting")
+        
         # Generate response
         try:
             if isinstance(self.model, Llama):
                 response = self.model(
-                    prompt,
+                    formatted_prompt,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     stream=stream
@@ -356,7 +393,7 @@ class EdgeMind:
                 text = response["choices"][0]["text"]
             else:
                 # Fallback to mock or API
-                response = self.model(prompt, max_tokens=max_tokens)
+                response = self.model(formatted_prompt, max_tokens=max_tokens)
                 text = response["choices"][0]["text"]
         except Exception as e:
             self._log(f"❌ Generation error: {e}")
@@ -444,8 +481,12 @@ Commands:
   /safe <query> - Check safety
   /bench       - Run benchmark
   /switch <model> - Switch model
+  /clear       - Clear conversation history
   /quit        - Exit
         """)
+        
+        if self.model_type == ModelType.TINYLLAMA:
+            self._log("📝 Using TinyLlama with proper prompt formatting")
         
         while True:
             try:
@@ -453,12 +494,16 @@ Commands:
                 
                 if user_input.lower() == '/quit':
                     break
+                elif user_input.lower() == '/clear':
+                    self.conversation_history = []
+                    self._log("🗑️ Conversation history cleared")
                 elif user_input.lower() == '/bench':
                     self.benchmark()
                 elif user_input.startswith('/switch'):
                     model_name = user_input.split(' ', 1)[1] if ' ' in user_input else 'tinyllama'
                     try:
                         self.load_model(ModelType(model_name))
+                        self.conversation_history = []  # Clear history on model switch
                     except ValueError:
                         self._log(f"❌ Unknown model: {model_name}")
                 elif user_input.startswith('/rag'):
@@ -472,6 +517,14 @@ Commands:
                 else:
                     response = self.generate(user_input)
                     print(f"\n🤖 EdgeMind: {response}")
+                    
+                    # Add to conversation history
+                    self.conversation_history.append({"role": "user", "content": user_input})
+                    self.conversation_history.append({"role": "assistant", "content": response})
+                    
+                    # Keep only last 10 exchanges
+                    if len(self.conversation_history) > 20:
+                        self.conversation_history = self.conversation_history[-20:]
                     
             except KeyboardInterrupt:
                 break
@@ -502,7 +555,8 @@ def main():
     
     # Initialize EdgeMind
     print("\n" + "="*60)
-    print("🧠 EdgeMind v0.3.0 - Revolutionary Local AI")
+    print("🧠 EdgeMind v0.3.0 - Local AI System")
+    print("📝 Now with TinyLlama prompt formatting fix!")
     print("="*60)
     
     try:
