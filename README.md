@@ -149,6 +149,9 @@ ctest --test-dir .\build -R correctness -V
 # Perf vs packed (loader path)
 .\build\test_perf_load_packed.exe --packed .\pack\q4edge --M 256 --it 5
 ```
+### Third-party SDKs (Windows)
+We don’t commit vendor SDK binaries. Hydrate them on demand:
+
 
 **Notes**
 
