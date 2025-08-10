@@ -259,7 +259,9 @@ class EdgeMind:
                 n_ctx=config.context_length,
                 n_batch=512,
                 n_threads=psutil.cpu_count(logical=False),
-                verbose=False
+                verbose=False,
+                # Add stop tokens for TinyLlama
+                stop=["<|user|>", "<|assistant|>", "<|system|>", "</s>"]
             )
             self._log(f"✅ Model loaded: {config.tokens_per_sec} tokens/sec expected")
         except Exception as e:
@@ -337,7 +339,7 @@ class EdgeMind:
         self,
         prompt: str,
         max_tokens: int = 256,
-        temperature: float = 0.3,
+        temperature: float = 0.7,
         stream: bool = False,
         use_rag: bool = False,
         safety_check: bool = True
@@ -357,6 +359,12 @@ class EdgeMind:
             Generated text or full response dict
         """
         start_time = time.time()
+        
+        # Adjust parameters for better responses
+        if self.model_type == ModelType.TINYLLAMA:
+            max_tokens = min(max_tokens, 150)  # Limit TinyLlama responses
+            temperature = min(temperature, 0.3)  # Lower temperature for coherence
+            self._log(f"🎯 Adjusted params: max_tokens={max_tokens}, temp={temperature}")
         
         # RAG enhancement
         if use_rag and self.rag_system:
@@ -384,13 +392,21 @@ class EdgeMind:
         # Generate response
         try:
             if isinstance(self.model, Llama):
+                # Define stop tokens based on model
+                stop_tokens = self._get_stop_tokens()
+                
                 response = self.model(
                     formatted_prompt,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    stream=stream
+                    stream=stream,
+                    stop=stop_tokens,
+                    echo=False  # Don't echo the prompt
                 )
                 text = response["choices"][0]["text"]
+                
+                # Clean up response
+                text = self._clean_response(text)
             else:
                 # Fallback to mock or API
                 response = self.model(formatted_prompt, max_tokens=max_tokens)
@@ -410,6 +426,34 @@ class EdgeMind:
             self._log(f"⚡ Generated {tokens} tokens in {elapsed:.2f}s ({tokens/elapsed:.1f} tok/s)")
         
         return text if not stream else response
+    
+    def _get_stop_tokens(self) -> List[str]:
+        """Get stop tokens based on model type"""
+        if self.model_type == ModelType.TINYLLAMA:
+            return ["<|user|>", "<|assistant|>", "<|system|>", "</s>", "\n<|"]
+        elif self.model_type == ModelType.MISTRAL:
+            return ["</s>", "[INST]", "[/INST]"]
+        elif self.model_type == ModelType.PHI2:
+            return ["Instruct:", "Output:", "\n\n"]
+        else:
+            return ["</s>", "\n\n\n"]
+    
+    def _clean_response(self, text: str) -> str:
+        """Clean up model response by removing template tokens"""
+        # Remove common template tokens
+        cleanup_tokens = [
+            "<|user|>", "<|assistant|>", "<|system|>",
+            "</s>", "[INST]", "[/INST]",
+            "Instruct:", "Output:"
+        ]
+        
+        for token in cleanup_tokens:
+            text = text.replace(token, "")
+        
+        # Remove excessive whitespace
+        text = " ".join(text.split())
+        
+        return text.strip()
     
     def benchmark(self, prompts: Optional[List[str]] = None) -> Dict[str, Any]:
         """
@@ -481,12 +525,16 @@ Commands:
   /safe <query> - Check safety
   /bench       - Run benchmark
   /switch <model> - Switch model
+  /temp <value> - Set temperature (0.1-1.0)
   /clear       - Clear conversation history
   /quit        - Exit
         """)
         
         if self.model_type == ModelType.TINYLLAMA:
             self._log("📝 Using TinyLlama with proper prompt formatting")
+            self._log("💡 Tip: Lower temperature (0.3) for better responses")
+        
+        chat_temperature = 0.3  # Default for chat mode
         
         while True:
             try:
@@ -499,6 +547,16 @@ Commands:
                     self._log("🗑️ Conversation history cleared")
                 elif user_input.lower() == '/bench':
                     self.benchmark()
+                elif user_input.startswith('/temp'):
+                    try:
+                        new_temp = float(user_input.split()[1])
+                        if 0.1 <= new_temp <= 1.0:
+                            chat_temperature = new_temp
+                            self._log(f"🌡️ Temperature set to {chat_temperature}")
+                        else:
+                            self._log("❌ Temperature must be between 0.1 and 1.0")
+                    except (IndexError, ValueError):
+                        self._log("❌ Usage: /temp 0.3")
                 elif user_input.startswith('/switch'):
                     model_name = user_input.split(' ', 1)[1] if ' ' in user_input else 'tinyllama'
                     try:
@@ -508,14 +566,14 @@ Commands:
                         self._log(f"❌ Unknown model: {model_name}")
                 elif user_input.startswith('/rag'):
                     query = user_input.split(' ', 1)[1] if ' ' in user_input else ''
-                    response = self.generate(query, use_rag=True)
+                    response = self.generate(query, use_rag=True, temperature=chat_temperature)
                     print(f"\n🤖 EdgeMind: {response}")
                 elif user_input.startswith('/safe'):
                     query = user_input.split(' ', 1)[1] if ' ' in user_input else ''
                     is_safe = self.safety_system.is_safe(query) if self.safety_system else True
                     print(f"\n🔒 Safety Check: {'✅ SAFE' if is_safe else '⚠️ UNSAFE'}")
                 else:
-                    response = self.generate(user_input)
+                    response = self.generate(user_input, temperature=chat_temperature, max_tokens=100)
                     print(f"\n🤖 EdgeMind: {response}")
                     
                     # Add to conversation history
