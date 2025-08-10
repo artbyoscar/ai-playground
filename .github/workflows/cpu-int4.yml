@@ -1,0 +1,57 @@
+name: CPU INT4 (Windows)
+
+on:
+  push:
+    paths:
+      - "src/kernels/cpu/int4/**"
+      - "scripts/fetch_third_party.ps1"
+      - ".github/workflows/cpu-int4.yml"
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup LLVM + Ninja
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: llvm
+          vcvarsall: true
+          ninja: true
+
+      - name: Fetch third-party SDKs
+        shell: pwsh
+        run: |
+          scripts/fetch_third_party.ps1
+
+      - name: Configure (Release)
+        shell: pwsh
+        run: |
+          cmake -S src/kernels/cpu/int4 -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ `
+            -DINT4_ASSERTS=ON -DINT4_PREFETCH_AHEAD=128
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Release -v
+
+      - name: Correctness
+        shell: pwsh
+        run: ctest --test-dir build -R correctness -V
+
+      - name: Perf JSON (baseline)
+        shell: pwsh
+        run: |
+          .\build\test_qgemm_perf_vs_baseline.exe --M 256 --N 256 --K 2048 --it 3 --json perf_baseline.json
+          .\build\test_perf_load_packed.exe --packed src\kernels\cpu\int4\pack\q4edge --M 256 --it 3 --json perf_packed.json
+
+      - name: Upload perf artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: int4-perf-json
+          path: |
+            perf_baseline.json
+            perf_packed.json
