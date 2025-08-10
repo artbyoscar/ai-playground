@@ -1,424 +1,274 @@
-# 🧠 EdgeMind v0.4.0 - Working Local AI for Real Laptops
+# 🧠 EdgeMind v0.5.0 — From “Working Local AI” to Research-Grade Edge Intelligence
 
-[![GitHub](https://img.shields.io/badge/GitHub-artbyoscar-blue)](https://github.com/artbyoscar/ai-playground)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Working-success)](https://github.com/artbyoscar/ai-playground/tree/main)
-
-## ✅ Current Status (August 10, 2025)
-
-**WORKING**: EdgeMind v0.4.0 is now fully functional with Ollama integration, safety systems, and smart routing. This README reflects what ACTUALLY works on consumer laptops.
-
-### 🎯 What's Working Now
-- **Ollama Integration** - All models run through Ollama backend
-- **Safety System** - Properly blocks dangerous queries (confirmed working!)
-- **Smart Routing** - Automatically selects best model for each query
-- **Conversation Memory** - Maintains context across 10 exchanges
-- **Multiple Models** - Phi-3, Llama 3.2, DeepSeek all tested and working
-- **Practical Apps** - Personal assistant, code reviewer, web UI ready
-
-### 📊 Real Performance (Lenovo Yoga, 16GB RAM)
-| Model | Size | Actual Speed | Use Case |
-|-------|------|--------------|----------|
-| **phi3:mini** | 2.2GB | 5.8 tok/s | Quick responses |
-| **llama3.2:3b** | 2.0GB | 7.9 tok/s | General chat |
-| **deepseek-r1:7b** | 4.7GB | 4.7 tok/s | Coding tasks |
-| **deepseek-r1:14b** | 9.0GB | 2-3 tok/s | Complex reasoning |
-
-### ❌ What Won't Work on Laptops
-- **Mixtral 8x7b** - Needs 32GB RAM (your laptop has 16GB)
-- **Llama 3:70B** - Needs 40GB+ RAM
-- **GPU Acceleration** - AMD integrated graphics not supported by Ollama
-- **Real-time voice** - Possible but requires setup
+**Strong claim:** We’ve proven local LLMs are practical on consumer laptops. Now we’re turning EdgeMind into a **novel, research-driven platform**: custom low-bit kernels, quantization-aware adapters, on-device distillation, a reproducible benchmark harness, and a hardened plugin architecture. This README documents **what we’ve done**, **what we learned**, **where we’re going**, and **exact next steps**.
 
 ---
 
-## 🚀 Quick Start
+## ✅ What We’ve Shipped (v0.4.x → v0.5.0 foundation)
 
-### 1. Prerequisites
-- Python 3.10+
-- 8-16GB RAM
-- 20GB free disk space
-- Windows/Mac/Linux
+* **Local-first stack (Ollama)** with tested models (Phi-3 Mini, Llama 3.2 3B, DeepSeek R1 7B/14B)
+* **Safety system** with supervised guardrails
+* **Smart routing** across small models by task intent
+* **Conversation memory** with context trimming (≈10 exchanges)
+* **Practical apps**: assistant, code reviewer, web UI
+* **Benchmark script** for repeatable local timing
+* **Quantization utilities** (INT4 prototype) and BitNet 1-bit layer scaffold (R\&D)
+* **“BEAST” demo** that wires quantization + BitNet + routing + cache into one run
 
-### 2. Installation
+> Example wins:
+>
+> * On a **Lenovo Yoga / 16GB RAM**, Phi-3 Mini and Llama 3.2 3B run at usable speeds for daily work.
+> * Safety refusals fire on obviously risky prompts while allowing normal dev tasks.
+> * Routing to DeepSeek 7B boosts code-related accuracy without collapsing latency.
+
+---
+
+## 🔍 What We Learned
+
+**Performance & UX**
+
+* **Latency ceiling is memory-bound.** INT4 quantization helps, but kernels and memory layout dominate.
+* **Routing > one big model.** Small, specialized models beat a bigger generic model for most laptop tasks.
+* **Caching is king.** Tiered cache turns repeats from seconds → milliseconds; needs dedupe + invalidation.
+
+**Quantization & accuracy**
+
+* **INT4 per-channel quant** keeps quality acceptable for chat/coding; INT2/1-bit need adapter/QAT help.
+* **1-bit (BitNet-style) layers** are promising, but without specialized kernels the gains are limited on CPU.
+
+**Safety & eval**
+
+* **Guardrails must be measured.** Prompt-only filters are brittle; tool-level allowlists reduce false blocks.
+* **Benchmarks matter.** Token/sec alone is misleading; we need a **quality+latency** score that reflects real tasks.
+
+**Developer experience**
+
+* **CLI + Web UI parity** reduces friction.
+* **Plugin boundaries** prevent “giant ball of mud” as features grow.
+
+---
+
+## 🚀 Where We’re Going (Novelty & Moat)
+
+### 1) Custom Low-Bit Kernels (AMD iGPU/CPU)
+
+* **Goal:** INT4/INT2 + 1-bit matmul kernels targeting **DirectML** and **LLVM** backends; optional FP8 activations.
+* **Why it’s novel:** Co-design quantization with **hardware-aware kernels** for consumer AMD APUs.
+* **Deliverables:**
+
+  * QGEMM kernels (INT4 weights, FP16/FP8 activations)
+  * Packing/layout (per-channel scales, 64-group blocks)
+  * llama.cpp patch + GGUF path for easy adoption
+* **Success:** ≥ **2× throughput** vs. current CPU path on 7B models; **≤1%** quality delta on small evals.
+
+### 2) Quantization-Aware Adapters (QAT/LoRA at 2–4 bit)
+
+* **Goal:** Keep accuracy at low bits by training **LoRA-style adapters** with QAT, **auto-export to GGUF**.
+* **Deliverables:**
+
+  * QAT pipeline (INT4/INT2) with per-channel scales
+  * Adapter export that merges into quantized weights
+  * “1-click” QAT tuning script for user datasets
+* **Success:** **≤0.5%** drop on held-out tasks vs. FP16 baselines; **drop-in** with Ollama.
+
+### 3) On-Device Distillation (Teacher → Student in the background)
+
+* **Goal:** Use cached Q\&A + optional RAG to **self-distill** into 3–7B students, entirely offline.
+* **Deliverables:**
+
+  * Reward-guided sampling (choose best teacher answers)
+  * Mini-epochs that run when idle (power-aware)
+  * “Personalization packs” the user can export/share
+* **Success:** Local student beats base 3B/7B on user’s tasks at same or lower latency.
+
+### 4) Reproducible Benchmark Suite (Consumer-Laptop-Ready)
+
+* **Goal:** Public harness to measure **latency, throughput, quality, memory, and safety** on laptops.
+* **Deliverables:**
+
+  * Deterministic prompts for chat, code, RAG, safety
+  * Metrics: token/sec, end-to-end latency, accuracy proxies, refusal stats
+  * Results JSON + pretty HTML report; CI artifacts
+* **Success:** Any contributor can reproduce within **±5%** on the same hardware class.
+
+### 5) Hardened Plugin Architecture (Tools with Guardrails)
+
+* **Goal:** Route search, code exec, RAG, vision, and OS control **per prompt signature** with **permission gates**.
+* **Deliverables:**
+
+  * `@tool` manifest (scopes, rate limits, red lines)
+  * Router that selects models/tools, logs decisions
+  * Unit tests + fuzz tests for each tool
+* **Success:** Plugins are safe by default, auditable, and easy to add.
+
+---
+
+## 🧭 Roadmap (Q3–Q4 2025)
+
+**August–September (v0.5.0-alpha)**
+
+* INT4 kernel prototype (CPU first), PTQ → GGUF pipeline
+* QAT/LoRA adapters at 4-bit on a 3B model
+* Benchmark harness v1 (CLI + HTML)
+
+**October (v0.5.0)**
+
+* DirectML path for AMD iGPU (INT4)
+* On-device distillation (teacher sampling + idle training)
+* Plugin SDK with guardrails, 3 reference plugins (search, RAG, code exec)
+
+**November–December (v0.5.1)**
+
+* INT2 experimental kernels + FP8 activations
+* Distillation “packs” export/import
+* Benchmark site with community submissions
+
+---
+
+## 🏗 Architecture (v0.5 direction)
+
+* **Core:** Router → Model Runner (Ollama / llama.cpp) → Tool Layer (plugins with scopes)
+* **Optimization:** Quantizer (PTQ/QAT), Kernel backends (CPU/DirectML), Cache (L1/L2 + KV)
+* **Memory:** Rolling context, eviction policy, per-task compression
+* **Safety:** Policy + tool allowlist, per-plugin guardrails, audit log
+
+---
+
+## ⚙️ Quick Start (Working Today)
+
 ```bash
-# Clone repository
+# Clone & setup
 git clone https://github.com/artbyoscar/ai-playground.git
 cd ai-playground
-
-# Create virtual environment
 python -m venv ai-env
-
-# Activate (Windows)
+# Windows
 .\ai-env\Scripts\Activate.ps1
-# Or Mac/Linux
+# macOS/Linux
 source ai-env/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-pip install ollama  # Optional but recommended
+pip install ollama
 ```
 
-### 3. Install Ollama
 ```bash
-# Windows: Download from https://ollama.com/download/windows
-# Mac/Linux:
-curl -fsSL https://ollama.com/install.sh | sh
+# Install models (pick a few)
+ollama pull phi3:mini
+ollama pull llama3.2:3b
+ollama pull deepseek-r1:7b-qwen-distill-q4_k_m
 ```
 
-### 4. Download Working Models
 ```bash
-# Essential models (tested and working)
-ollama pull phi3:mini          # 2.2GB - Fastest
-ollama pull llama3.2:3b        # 2.0GB - Best overall
-ollama pull deepseek-r1:7b-qwen-distill-q4_k_m  # 4.7GB - For coding
-
-# Optional (slower but more capable)
-ollama pull deepseek-r1:14b    # 9.0GB - Complex tasks
-```
-
-### 5. Test EdgeMind
-```bash
-# Run demo
-python demo.py
-
-# Start chat interface
+# Run chat
 python src/core/edgemind.py --chat
-
-# Run benchmark
+# Demo / benchmarks
+python demo.py
 python src/core/edgemind.py --benchmark
 ```
 
 ---
 
-## 💻 Practical Applications (Ready to Use!)
+## 📊 Current Local Performance (Laptop, 16GB RAM)
 
-### 1. Personal Assistant
-```bash
-python assistant.py
-```
-Features:
-- Morning briefings with weather
-- Task management
-- Code helper
-- Daily tips and motivation
+| Model           |  Size | tok/s | Notes             |
+| --------------- | ----: | ----: | ----------------- |
+| phi3\:mini      | 2.2GB | \~5.8 | fastest replies   |
+| llama3.2:3b     | 2.0GB | \~7.9 | balanced chat     |
+| deepseek-r1:7b  | 4.7GB | \~4.7 | coding tasks      |
+| deepseek-r1:14b | 9.0GB |   2–3 | complex reasoning |
 
-### 2. Code Reviewer
-```bash
-python code_reviewer.py
-```
-Features:
-- Analyzes Python files for issues
-- Suggests improvements
-- Security checks
-- Best practices recommendations
-
-### 3. Web Interface
-```bash
-python web_ui.py
-# Open http://localhost:5000
-```
-Features:
-- Browser-based chat
-- Share with others on network
-- Clean, simple interface
-
-### 4. Interactive Chat
-```bash
-python src/core/edgemind.py --chat
-```
-Commands:
-- `/model <name>` - Switch models
-- `/route on/off` - Toggle smart routing
-- `/safety on/off` - Toggle safety checks
-- `/metrics` - Show performance stats
-- `/quit` - Exit
+> Targets with kernels & QAT:
+>
+> * **2×** throughput on 3B–7B (INT4 kernels)
+> * **≤0.5%** quality delta via QAT adapters
+> * **Student models** that beat base 3B/7B on user tasks
 
 ---
 
-## 🔧 Configuration
+## 🧪 Benchmark Suite (what we’ll report)
 
-### Model Routing (Automatic)
-EdgeMind automatically selects the best model:
-- **Coding queries** → DeepSeek 7B
-- **Quick questions** → Phi-3 Mini
-- **General chat** → Llama 3.2
-- **Complex analysis** → DeepSeek 14B
-
-### Safety System
-Properly blocks:
-- ✅ "How to make a bomb" → BLOCKED
-- ✅ "Write malicious code" → REFUSED
-- ✅ "Create ransomware" → BLOCKED
-- ✅ Normal queries → ALLOWED
-
-### Memory Management
-- Maintains last 10 conversation exchanges
-- Automatically trims older context
-- Can be cleared with `/clear` command
+* **Latency:** end-to-end, first token, throughput
+* **Quality proxies:** shortform QA, code solve rate (toy), retrieval hit rate
+* **Safety:** false-block / false-allow counts by category
+* **Memory:** peak RAM, model load time, cache effectiveness
+* **Reproducibility:** hardware profile + fixed seeds
 
 ---
 
-## 📁 Project Structure
-```
-ai-playground/
-├── src/
-│   ├── core/
-│   │   ├── edgemind.py         # v0.4.0 main engine ✅
-│   │   ├── smart_rag.py        # RAG system (optional)
-│   │   └── streaming_demo.py   # Streaming responses
-│   ├── agents/
-│   │   └── safe_computer_control.py  # Safety system ✅
-│   ├── tools/
-│   │   ├── web_search.py       # Web search integration
-│   │   ├── better_search.py    # Weather and news
-│   │   └── voice_assistant.py  # Voice I/O (optional)
-│   └── models/
-│       └── gpt_oss_integration.py  # Placeholder
-├── tests/
-│   ├── test_working_models.py  # Model benchmarks ✅
-│   └── hybrid_edgemind.py      # Routing tests ✅
-├── demo.py                      # Feature demonstration ✅
-├── assistant.py                 # Personal assistant app
-├── code_reviewer.py            # Code analysis tool
-├── web_ui.py                   # Web interface
-└── README.md                   # This file
-```
+## 🔐 Safety Approach
+
+* **Model-level policies**: refusal templates, disallowed categories
+* **Tool scopes**: explicit allowlists, rate limits, “dry-run” mode for risky ops
+* **Audit logs**: tool calls, sources, decisions; user-clearable
+* **Offline-first** by default; online tools require opt-in
 
 ---
 
-## 🚀 Upcoming Features
+## 🧰 Developer Guide
 
-### This Week (Immediate)
-- [ ] **Streaming Responses** - Show text as it generates
-- [ ] **Web Search Integration** - Current information access
-- [ ] **Better Weather API** - More accurate local weather
-- [ ] **VSCode Extension** - Direct IDE integration
-
-### Next Month (September 2025)
-- [ ] **RAG System** - Document search and retrieval
-- [ ] **Voice Assistant** - Hands-free interaction
-- [ ] **Fine-tuning Interface** - Customize models for your needs
-- [ ] **Mobile Web App** - Responsive design for phones
-
-### Q4 2025
-- [ ] **Multi-user Support** - Family/team accounts
-- [ ] **Plugin System** - Extensible architecture
-- [ ] **Model Merging** - Combine strengths of different models
-- [ ] **Advanced Safety** - Constitutional AI implementation
-
-### 2026 Vision
-- [ ] **BitNet Models** - When available (71x efficiency)
-- [ ] **Distributed Inference** - Multiple devices as one
-- [ ] **Custom Hardware** - Optimized for edge AI
-- [ ] **Brain-Computer Interface** - Just kidding... or are we?
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues & Solutions
-
-#### "Model requires more memory than available"
-```bash
-# Solution: Use smaller model
-ollama pull phi3:mini  # Instead of larger models
-```
-
-#### Slow response times
-```bash
-# Close other applications
-# Use faster model:
-/model phi3:mini  # In chat mode
-```
-
-#### Safety system blocking legitimate queries
-```bash
-# Temporarily disable in chat:
-/safety off
-# Re-enable after:
-/safety on
-```
-
-#### Import errors
-```python
-# Create missing file:
-# src/models/gpt_oss_integration.py
-class GPTOSSIntegration:
-    def __init__(self):
-        self.name = "GPT-OSS"
-```
-
----
-
-## 📊 Benchmarks
-
-### Real-World Performance (Your Laptop)
-```
-System: Lenovo Yoga, 16GB RAM, AMD Radeon 780M
-OS: Windows 11
-Python: 3.10+
-
-Results from actual testing:
-- phi3:mini: 5.8 tokens/sec average
-- llama3.2:3b: 7.9 tokens/sec average  
-- deepseek-r1:7b: 4.7 tokens/sec average
-- Memory usage: 11.3GB with models loaded
-```
-
-### Comparison to Cloud Services
-| Service | Cost | Speed | Privacy | Offline |
-|---------|------|-------|---------|---------|
-| EdgeMind | Free* | 5-8 tok/s | 100% | Yes |
-| ChatGPT | $20/mo | 50+ tok/s | No | No |
-| Claude | $20/mo | 40+ tok/s | No | No |
-| Groq | Free tier | 100+ tok/s | No | No |
-
-*After initial setup
-
----
-
-## 💡 Tips for Best Performance
-
-### Optimize Your Setup
-1. **Close unnecessary apps** - Free up RAM
-2. **Use SSD** - Faster model loading
-3. **Disable Windows Defender scanning** - For ai-playground folder
-4. **Use smaller models** - Phi-3 for most tasks
-5. **Enable routing** - Let EdgeMind choose
-
-### Model Selection Guide
-- **General questions**: Llama 3.2 (balanced)
-- **Code/technical**: DeepSeek 7B (specialized)
-- **Quick lookups**: Phi-3 Mini (fastest)
-- **Complex analysis**: DeepSeek 14B (if you can wait)
-- **Safety-critical**: Always keep safety ON
-
-### Power User Commands
-```python
-# Create shortcuts for common tasks
-# Add to your PowerShell profile:
-function ai { python C:\path\to\edgemind.py --chat }
-function ai-help { python C:\path\to\assistant.py }
-function ai-code { python C:\path\to\code_reviewer.py $args }
-```
+* **Plugins:** simple manifest (name, scope, params, I/O), tests required
+* **Kernels:** contrib backends live under `kernels/` (CPU/DirectML), clear benchmarks
+* **Quantization:** `quant/` with PTQ + QAT flows, GGUF export scripts
+* **Distillation:** `distill/` background trainer, reward heuristics, pack exporter
 
 ---
 
 ## 🤝 Contributing
 
-### We Need Help With
-1. **Documentation** - Improve guides and examples
-2. **Testing** - On different hardware configurations  
-3. **Features** - Web search, voice, plugins
-4. **Models** - Fine-tuning for specific tasks
-5. **UI/UX** - Better interfaces and experiences
+**We need help with:**
 
-### How to Contribute
-```bash
-# Fork the repo at github.com/artbyoscar/ai-playground
-# Create feature branch
-git checkout -b feature/amazing-feature
+* INT4/INT2/1-bit kernels (DirectML/LLVM)
+* QAT/LoRA adapters and accuracy evals
+* On-device distillation heuristics
+* Benchmark harness + website
+* Plugin examples (search, RAG, vision) and tests
 
-# Make changes
-# Test thoroughly on YOUR hardware
-# Commit with clear message
-git commit -m "feat: add amazing feature"
+**How to start:**
 
-# Push and create PR
-git push origin feature/amazing-feature
-```
+1. Pick an issue labeled `good-first` or `research`.
+2. Reproduce baseline benchmarks.
+3. Submit a small, well-tested PR.
 
 ---
 
-## 📈 Roadmap Progress
+## 📝 Changelog Highlights
 
-### ✅ Completed (v0.4.0)
-- [x] Ollama integration
-- [x] Safety system working
-- [x] Model routing
-- [x] Conversation memory
-- [x] Multiple model support
-- [x] Practical applications
-- [x] Web interface
-- [x] Benchmarking suite
-
-### 🔄 In Progress
-- [ ] Streaming responses (code ready)
-- [ ] Web search integration (basic version ready)
-- [ ] Voice assistant (TTS working)
-
-### 📋 Planned
-- [ ] RAG implementation
-- [ ] Fine-tuning interface
-- [ ] Plugin system
-- [ ] Mobile app
+* **v0.4.x:** Local stack stabilized; routing, safety, memory, demos; INT4 PTQ & BitNet scaffolds.
+* **v0.5.0 (in progress):** INT4 kernels (CPU/DirectML), QAT adapters, on-device distillation, benchmark harness v1, plugin SDK.
 
 ---
 
-## 🐛 Known Limitations
+## 🎯 Next Steps (Actionable)
 
-### Hardware Constraints
-- **No GPU acceleration** on AMD integrated graphics
-- **CPU-only inference** limits speed to 5-10 tok/s
-- **RAM limitations** prevent large models
-- **Battery drain** during continuous use
+**This week**
 
-### Software Limitations
-- **Model quality** varies by size
-- **No internet access** for models (by design)
-- **Context window** limited to 8-32K tokens
-- **No multimodal** support yet (text only)
+* Ship **INT4 CPU QGEMM** prototype + microbenchmarks
+* QAT adapter training for a **3B chat** model at 4-bit
+* Benchmark harness v1 (CLI + HTML report)
 
----
+**Next 30 days**
 
-## 📞 Support & Community
+* **DirectML INT4** path on AMD iGPU
+* Idle-time **distillation loop** with reward-guided sampling
+* Plugin SDK with **3 reference tools** and guardrails
 
-### Get Help
-- **Issues**: [GitHub Issues](https://github.com/artbyoscar/ai-playground/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/artbyoscar/ai-playground/discussions)
-- **Email**: art.by.oscar.n@gmail.com
+**Quarter goal (Q4)**
 
-### Resources
-- [Ollama Documentation](https://ollama.com/docs)
-- [Model Library](https://ollama.com/library)
-- [Hardware Guide](docs/hardware.md) (coming soon)
-- [API Reference](docs/api.md) (coming soon)
+* Public **results page** with reproducible runs
+* **Student model** beats base 3B on user tasks, same latency
+* **2× throughput** on 7B class with kernels
 
 ---
 
 ## 📄 License
 
-MIT License - Free to use, modify, and distribute
+MIT — free to use, modify, and distribute.
 
 ---
 
-## 🙏 Acknowledgments
+## 🧩 The Bottom Line
 
-- **Oscar Nuñez** - Creator and maintainer
-- **Ollama** - For making local AI accessible
-- **Microsoft** - For Phi-3 models
-- **Meta** - For Llama models
-- **DeepSeek** - For powerful open models
-- **Community** - For testing and feedback
+* We turned “local LLMs on laptops” into a **real product**.
+* Now we’re executing a **research-grade plan**: **custom low-bit kernels**, **QAT adapters**, **on-device distillation**, **reproducible benchmarks**, and a **safe plugin system**.
+* This is how EdgeMind becomes both **useful today** and **novel tomorrow**.
 
----
-
-## 🎯 The Bottom Line
-
-**EdgeMind v0.4.0** is a working, practical, local AI system that:
-- ✅ Actually runs on normal laptops
-- ✅ Provides useful features today
-- ✅ Respects your privacy
-- ✅ Works completely offline
-- ✅ Costs nothing after setup
-
-It's not AGI, it's not as fast as ChatGPT, but it's **yours**, it's **private**, and it **works**.
-
----
-
-**Start here**: `python src/core/edgemind.py --chat`
-
-**Repository**: [github.com/artbyoscar/ai-playground](https://github.com/artbyoscar/ai-playground)
-
-*Created by Oscar Nuñez - Last Updated: August 10, 2025 - v0.4.0 Release*
+**Start here:** `python src/core/edgemind.py --chat`
+**Repo:** `github.com/artbyoscar/ai-playground`
