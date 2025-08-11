@@ -538,3 +538,120 @@ void qgemm_int4_fp16_tiled_mt_mblocked(
     }
   });
 }
+
+// ============== FUSED EPILOGUE VARIANTS ==============
+#ifdef INT4_FUSE_BIAS
+
+void qgemm_int4_fp16_tiled_mt_fused(
+  const uint16_t* A_fp16, int lda,
+  const uint8_t*  B_packed, const uint16_t* B_scales, int ldb_packed,
+  uint16_t*       C_fp16, int ldc,
+  int M, int N, int K, int group_size,
+  int nc_tile, int num_threads,
+  const uint16_t* bias_fp16,
+  int activation)
+{
+  (void)ldb_packed;
+
+  if (num_threads <= 0) {
+    num_threads = (int)std::thread::hardware_concurrency();
+    if (num_threads <= 0) num_threads = 4;
+  }
+  if (nc_tile <= 0) nc_tile = 8;
+  const int groups = (K + group_size - 1) / group_size;
+  const int bytes_per_group = group_size / 2;
+
+  const bool can_use_avx2 =
+  #if defined(__AVX2__) && defined(__F16C__)
+    (group_size == 64);
+  #else
+    false;
+  #endif
+
+  const int num_tiles = (N + nc_tile - 1) / nc_tile;
+  int effective_threads = std::max(1, std::min(num_threads, num_tiles));
+
+  parallel_for(0, num_tiles, effective_threads, [&](int t0, int t1){
+    alignas(32) float a32[64]; // reused per 64-chunk
+    for (int t = t0; t < t1; ++t) {
+      const int n_begin = t * nc_tile;
+      const int n_end   = std::min(N, n_begin + nc_tile);
+      const int cols    = n_end - n_begin;
+
+      for (int m=0; m<M; ++m) {
+        float acc[32]; // supports nc_tile up to 32
+        for (int i=0; i<cols; ++i) acc[i] = 0.0f;
+
+        const uint16_t* Arow = A_fp16 + m*lda;
+
+        int k = 0;
+        for (int g=0; g<groups; ++g) {
+          const int k_rem = K - k;
+
+          if (can_use_avx2 && k_rem >= 64) {
+            #if defined(__AVX2__) && defined(__F16C__)
+            convert_a64_fp16_to_fp32(Arow + k, a32);
+
+            for (int i=0; i<cols; ++i) {
+              const int n = n_begin + i;
+              const uint8_t*  group_ptr = B_packed + n * (groups * bytes_per_group) + g * bytes_per_group;
+              const float     s = fp16_to_fp32(B_scales[n * groups + g]);
+
+              acc[i] += dot64_from_a32_avx2(a32, group_ptr, s);
+            }
+            k += 64;
+            continue;
+            #endif
+          }
+
+          // Scalar tail or no-AVX build
+          for (int i=0; i<cols; ++i) {
+            const int n = n_begin + i;
+            const uint8_t*  group_ptr = B_packed + n * (groups * bytes_per_group) + g * bytes_per_group;
+            const float     s = fp16_to_fp32(B_scales[n * groups + g]);
+
+            int kk = k;
+            for (int b=0; b<bytes_per_group; ++b) {
+              uint8_t packed = group_ptr[b];
+              int q0 =  (packed >> 4) & 0xF; q0 -= 8;
+              int q1 =  (packed     ) & 0xF; q1 -= 8;
+              if (kk < K)     acc[i] += fp16_to_fp32(Arow[kk])   * (s * (float)q0);
+              if (kk+1 < K)   acc[i] += fp16_to_fp32(Arow[kk+1]) * (s * (float)q1);
+              kk += 2;
+            }
+          }
+          k += 64; // safe even for last partial group
+        }
+
+        // FUSED EPILOGUE: Apply bias and activation
+        for (int i=0; i<cols; ++i) {
+          const int n = n_begin + i;
+          float val = acc[i];
+          
+          // Add bias
+          if (bias_fp16 != nullptr) {
+            val += fp16_to_fp32(bias_fp16[n]);
+          }
+          
+          // Apply activation
+          if (activation == 1) {  // ReLU
+            val = std::max(0.0f, val);
+          } else if (activation == 2) {  // SiLU (x * sigmoid(x))
+            float sigmoid = 1.0f / (1.0f + std::exp(-val));
+            val = val * sigmoid;
+          } else if (activation == 3) {  // GELU (approximate with tanh)
+            float x = val * 0.7978845608f; // sqrt(2/pi)
+            float x3 = x * x * x;
+            float tanh_arg = x + 0.044715f * x3;
+            float tanh_val = std::tanh(tanh_arg);
+            val = 0.5f * val * (1.0f + tanh_val);
+          }
+          
+          C_fp16[m*ldc + n] = fp16_from_fp32(val);
+        }
+      }
+    }
+  });
+}
+
+#endif // INT4_FUSE_BIAS

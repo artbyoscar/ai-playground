@@ -1,0 +1,7 @@
+"Test","GFLOPS"
+"Q8 MT-mt","107.58"
+"Baseline-ref","1.83"
+"Baseline-st","21.93"
+"Baseline-mt","107.81"
+"Baseline-tmt","102.62"
+"Baseline-m","97.93"

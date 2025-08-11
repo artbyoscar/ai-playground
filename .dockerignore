@@ -21,7 +21,24 @@ htmlcov/
 .tox/
 *.egg-info/
 dist/
-build/
+
+# Build artifacts (but keep source)
+build*/
+!src/kernels/cpu/int4/
+src/kernels/cpu/int4/build*/
+src/kernels/cpu/int4/Testing/
+*.exe
+*.dll
+*.pdb
+*.lib
+*.exp
+*.ilk
+
+# Keep kernel source but not builds
+!src/kernels/**/*.cpp
+!src/kernels/**/*.h
+!src/kernels/**/*.py
+!src/kernels/**/CMakeLists.txt
 
 # IDE
 .vscode/
@@ -37,25 +54,40 @@ build/
 *.sqlite
 models/*.bin
 models/*.gguf
+models/*.safetensors
 data/cache/
 temp/
 tmp/
+*.npy
+*.bin
+!pack/*.bin
 
 # Documentation
 docs/
 *.md
+!README.md
+!PERFORMANCE_REPORT.md
 LICENSE
 
-# Tests
+# Tests (but keep kernel tests)
 tests/
 test_*.py
 *_test.py
+!src/kernels/cpu/int4/tests/
 
 # Environment
 .env.local
 .env.*.local
+*.env.backup
 
 # Node (if using for frontend later)
 node_modules/
 npm-debug.log
 yarn-error.log
+package-lock.json
+
+# Notebooks (keep for dev profile)
+!notebooks/
+
+# Monitoring configs
+!monitoring/

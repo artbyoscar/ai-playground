@@ -1,68 +1,82 @@
 #include "../qgemm_int4.h"
-#include "../pack_int4.h"
 #include <vector>
 #include <random>
 #include <chrono>
-#include <iostream>
+#include <cstdio>
+#include <cstring>
 #include <algorithm>
-#include <thread>
+#include <string>
 
-static inline uint16_t f2h(float f) {
-  uint16_t s = (f < 0) ? 0x8000 : 0;
-  float a = std::fabs(f); if (a==0) return s;
-  int e; float m = std::frexp(a, &e);
-  int E = std::clamp(e + 14, -15, 16) + 15;
-  uint16_t M = (uint16_t)std::clamp(int((m*2 - 1)*(1<<10)),0,(1<<10)-1);
-  return s | (uint16_t(E)<<10) | M;
+static double ms_since(std::chrono::high_resolution_clock::time_point t0){
+  using namespace std::chrono;
+  return duration<double, std::milli>(high_resolution_clock::now()-t0).count();
+}
+static inline uint16_t f2h(float f){
+  uint32_t x; std::memcpy(&x,&f,sizeof(x));
+  uint32_t sign=(x>>16)&0x8000u;
+  int32_t  exp =(int32_t)((x>>23)&0xFF)-127+15;
+  uint32_t mant=x&0x7FFFFFu;
+  if(exp<=0){ if(exp<-10) return (uint16_t)sign; mant|=0x800000u;
+    uint32_t t = mant >> (1-exp+13);
+    if((mant>>(1-exp+12))&1u) t+=1u; return (uint16_t)(sign|t);
+  } else if(exp>=31){ return (uint16_t)(sign|0x7BFFu); }
+  uint32_t half=sign|((uint32_t)exp<<10)|(mant>>13);
+  if(mant&0x00001000u) half+=1u; return (uint16_t)half;
 }
 
-int main() {
-  const int M=64, N=64, K=4096, G=64;
-  std::mt19937 rng(1357);
-  std::uniform_real_distribution<float> dist(-1.f, 1.f);
+int main(int argc, char** argv){
+  int M=256,N=256,K=2048,it=3, threads=0;
+  const char* json_out = nullptr;
 
-  std::vector<float> A_f32(size_t(M)*K);
-  std::vector<float> B_f32(size_t(K)*N);
-  for (auto& x: A_f32) x = dist(rng);
-  for (auto& x: B_f32) x = dist(rng);
-
-  // pack B by columns into Q8 expanded format
-  const int groups = (K+G-1)/G;
-  std::vector<int8_t>  B_q8; B_q8.reserve(size_t(N)*K);
-  std::vector<uint16_t> B_scales; B_scales.reserve(size_t(N)*groups);
-  std::vector<float> col(static_cast<size_t>(K));
-  for (int n=0; n<N; ++n) {
-    for (int k=0; k<K; ++k) col[k] = B_f32[k*N + n];
-    auto p = q4edge_pack_rowmajor_f32_q8(col.data(), 1, K, G);
-    B_scales.insert(B_scales.end(), p.scales.begin(), p.scales.end());
-    B_q8.insert(B_q8.end(), p.data.begin(), p.data.end());
+  for (int i=1;i<argc;++i){
+    if(!std::strcmp(argv[i],"--M") && i+1<argc) M=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--N") && i+1<argc) N=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--K") && i+1<argc) K=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--it")&& i+1<argc) it=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--threads")&& i+1<argc) threads=std::atoi(argv[++i]);
+    else if(!std::strcmp(argv[i],"--json")&& i+1<argc) json_out=argv[++i];
   }
 
-  // A in fp16
-  std::vector<uint16_t> A_fp16(size_t(M)*K), C_fp16(size_t(M)*N);
-  for (size_t i=0;i<A_f32.size();++i) A_fp16[i] = f2h(A_f32[i]);
+  // Random A (fp16) and Q8 B
+  std::mt19937 rng(42);
+  std::uniform_real_distribution<float> dist(-1.f,1.f);
 
-  int hw = (int)std::thread::hardware_concurrency();
-  std::vector<int> Ts = {1,2,4,8,16};
-  Ts.erase(std::remove_if(Ts.begin(), Ts.end(), [hw](int t){return t>hw && hw>0;}), Ts.end());
+  std::vector<uint16_t> Ah((size_t)M*K);
+  for (int i=0;i<M*K;++i) Ah[i]=f2h(dist(rng));
 
-  // warmup
-  for (int w=0; w<3; ++w)
-    qgemm_int4_fp16_q8_mt(A_fp16.data(), K, B_q8.data(), B_scales.data(), 0,
-                          C_fp16.data(), N, M, N, K, G, 8);
+  // Make a simple Q8 B + fp16 scales (reuse int4 layout idea)
+  const int G = 64;
+  const int groups=(K+G-1)/G;
+  std::vector<int8_t>   Bq((size_t)K*N);
+  std::vector<uint16_t> Sc((size_t)N*groups);
+  // naïve per-group scale = 1.0 for now, and pack signed [-127,127]
+  for (auto &v:Bq){ v = (int8_t)std::round(dist(rng)*100); }
+  for (auto &s:Sc){ s = f2h(1.0f); }
 
-  for (int T : Ts) {
-    auto t0 = std::chrono::high_resolution_clock::now();
-    const int iters = 30;
-    for (int it=0; it<iters; ++it)
-      qgemm_int4_fp16_q8_mt(A_fp16.data(), K, B_q8.data(), B_scales.data(), 0,
-                            C_fp16.data(), N, M, N, K, G, T);
-    auto t1 = std::chrono::high_resolution_clock::now();
-    double ms = std::chrono::duration<double, std::milli>(t1-t0).count() / iters;
+  auto bench = [&](auto fn, const char* name)->double{
+    std::vector<uint16_t> Ch((size_t)M*N);
+    fn(Ah.data(), K, (const int8_t*)Bq.data(), (const uint16_t*)Sc.data(), N, Ch.data(), N, M,N,K,G, (threads>0?threads:8));
+    double best=1e100, gflop=(2.0*M*N*K)/1e9;
+    for(int i=0;i<it;++i){
+      auto t0=std::chrono::high_resolution_clock::now();
+      fn(Ah.data(), K, (const int8_t*)Bq.data(), (const uint16_t*)Sc.data(), N, Ch.data(), N, M,N,K,G, (threads>0?threads:8));
+      best = std::min(best, ms_since(t0));
+    }
+    std::printf("  %-6s : %.3f ms  (%.2f GFLOP/s)\n", name, best, gflop/(best/1000.0));
+    return best;
+  };
 
-    double gflops = (2.0 * M * N * (double)K) / 1e9;
-    double gflops_per_s = gflops / (ms/1000.0);
-    std::cout << "Threads="<<T<<"  avg="<<ms<<" ms  ~"<<gflops_per_s<<" GFLOP/s\n";
+  std::printf("Q8 MT perf: M=%d N=%d K=%d it=%d threads=%d\n",M,N,K,it,threads);
+  double mt = bench([](auto*Ah,int lda,auto*Bq,auto*Sc,int ldb,auto*Ch,int ldc,int M,int N,int K,int G,int thr){
+    qgemm_int4_fp16_q8_mt(Ah, lda, (const int8_t*)Bq, (const uint16_t*)Sc, ldb, Ch, ldc, M,N,K,G, thr);
+  },"mt");
+
+  if (json_out){
+    FILE* f = std::fopen(json_out,"wb");
+    if (f){
+      std::fprintf(f, "{\"M\":%d,\"N\":%d,\"K\":%d,\"it\":%d,\"mt_ms\":%.4f}\n", M,N,K,it, mt);
+      std::fclose(f);
+    }
   }
   return 0;
 }

@@ -66,6 +66,19 @@ void qgemm_int4_fp16_q8_mt(
   int M, int N, int K, int group_size,
   int num_threads);
 
+// Fused epilogue variant (with bias and activation)
+#ifdef INT4_FUSE_BIAS
+void qgemm_int4_fp16_tiled_mt_fused(
+    const uint16_t* A, int lda,
+    const uint8_t* B_packed, 
+    const uint16_t* scales, int ldb,
+    uint16_t* C, int ldc,
+    int M, int N, int K, int group_size,
+    int nc_tile, int num_threads,
+    const uint16_t* bias_fp16,
+    int activation);
+#endif
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

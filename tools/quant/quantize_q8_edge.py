@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-"""Q8 quantizer for EdgeMind kernels (symmetric per-group quantization)."""
-
+﻿#!/usr/bin/env python3
+"""Q8 quantizer for EdgeMind kernels."""
 import numpy as np
 import json
 import argparse
@@ -19,17 +18,12 @@ def quantize_q8_symmetric(weights, group_size=64):
         for g in range(groups):
             k_start = g * group_size
             k_end = min(k_start + group_size, K)
-            
-            # Get group
             group_vals = col[k_start:k_end]
             
-            # Find scale (max absolute value)
             max_abs = np.max(np.abs(group_vals))
             if max_abs > 1e-6:
                 scale = max_abs / 127.0
                 inv_scale = 1.0 / scale
-                
-                # Quantize
                 q_vals = np.round(group_vals * inv_scale).astype(np.int32)
                 q_vals = np.clip(q_vals, -127, 127)
                 quantized[k_start:k_end, n] = q_vals.astype(np.int8)
@@ -41,44 +35,37 @@ def quantize_q8_symmetric(weights, group_size=64):
     
     return quantized, scales
 
-def compute_error(original, quantized, scales, group_size=64):
-    """Compute relative error after quantization."""
-    K, N = original.shape
+def dequantize_q8(quantized, scales, group_size=64):
+    """Dequantize Q8 back to float32."""
+    K, N = quantized.shape
     groups = scales.shape[0]
+    dequantized = np.zeros((K, N), dtype=np.float32)
     
-    dequantized = np.zeros_like(original)
     for n in range(N):
         for g in range(groups):
             k_start = g * group_size
             k_end = min(k_start + group_size, K)
-            
             scale = scales[g, n].astype(np.float32)
             dequantized[k_start:k_end, n] = quantized[k_start:k_end, n].astype(np.float32) * scale
     
-    error = np.linalg.norm(original - dequantized) / np.linalg.norm(original)
-    return error, dequantized
+    return dequantized
 
 def main():
-    parser = argparse.ArgumentParser(description="Q8 quantizer for EdgeMind")
-    parser.add_argument("--weights", type=str, required=True, help="Path to weights.npy")
-    parser.add_argument("--out", type=str, required=True, help="Output prefix")
-    parser.add_argument("--group", type=int, default=64, help="Group size")
-    parser.add_argument("--verify", action="store_true", help="Verify with dequantization")
+    parser = argparse.ArgumentParser(description="Q8 quantizer")
+    parser.add_argument("--weights", type=str, required=True)
+    parser.add_argument("--out", type=str, required=True)
+    parser.add_argument("--group", type=int, default=64)
+    parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
     
-    # Load weights
-    print(f"Loading weights from {args.weights}")
     B = np.load(args.weights).astype(np.float32)
     if B.ndim == 1:
         B = B.reshape(-1, 1)
     K, N = B.shape
     print(f"Shape: K={K}, N={N}")
     
-    # Quantize
-    print(f"Quantizing with group_size={args.group}")
     quantized, scales = quantize_q8_symmetric(B, args.group)
     
-    # Pack column-wise
     packed_data = []
     packed_scales = []
     for n in range(N):
@@ -88,25 +75,19 @@ def main():
     packed_data = np.concatenate(packed_data)
     packed_scales = np.concatenate(packed_scales)
     
-    # Save
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Save binary files
     packed_data.tofile(f"{args.out}.q8.bin")
     packed_scales.astype(np.uint16).tofile(f"{args.out}.scales.fp16.bin")
     
-    # Save metadata
     metadata = {
         "format": "q8_edge",
         "K": K,
         "N": N,
         "group_size": args.group,
-        "num_groups": scales.shape[0],
         "data_file": f"{out_path.name}.q8.bin",
-        "scales_file": f"{out_path.name}.scales.fp16.bin",
-        "dtype": "int8",
-        "scale_dtype": "float16"
+        "scales_file": f"{out_path.name}.scales.fp16.bin"
     }
     
     with open(f"{args.out}.json", "w") as f:
@@ -114,19 +95,18 @@ def main():
     
     print(f"Saved: {args.out}.{{q8.bin, scales.fp16.bin, json}}")
     
-    # Verify if requested
     if args.verify:
-        print("\nVerifying quantization...")
-        error, dequant = compute_error(B, quantized, scales, args.group)
+        # Properly dequantize and compute error
+        dequantized = dequantize_q8(quantized, scales, args.group)
+        error = np.linalg.norm(B - dequantized) / np.linalg.norm(B)
         print(f"Relative error: {error:.4e}")
         
-        # Sample comparison
-        idx = np.random.randint(0, K*N, size=5)
-        for i in idx:
-            r, c = i // N, i % N
-            orig = B[r, c]
-            deq = dequant[r, c]
-            print(f"  [{r},{c}]: {orig:.4f} -> {deq:.4f} (diff: {abs(orig-deq):.4e})")
+        # Show some examples
+        print("\nSample values (original -> quantized -> dequantized):")
+        for _ in range(5):
+            i = np.random.randint(0, K)
+            j = np.random.randint(0, N)
+            print(f"  [{i},{j}]: {B[i,j]:.4f} -> {quantized[i,j]:4d} -> {dequantized[i,j]:.4f}")
 
 if __name__ == "__main__":
     main()

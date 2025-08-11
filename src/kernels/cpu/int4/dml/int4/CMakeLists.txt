@@ -12,31 +12,41 @@ endif()
 option(INT4_ASSERTS       "Enable runtime asserts in kernels" ON)
 option(INT4_BENCH_JSON    "Enable JSON output in perf harness" OFF)
 set(INT4_PREFETCH_AHEAD "128" CACHE STRING "Prefetch distance for A (bytes)")
+option(BUILD_DML          "Build DirectML smoke targets" OFF)
+option(INT4_FUSE_BIAS     "Enable fused bias/activation epilogue in kernels" OFF)
 
-message(STATUS "INT4_ASSERTS=${INT4_ASSERTS}  INT4_BENCH_JSON=${INT4_BENCH_JSON}  INT4_PREFETCH_AHEAD=${INT4_PREFETCH_AHEAD}")
+message(STATUS
+  "INT4_ASSERTS=${INT4_ASSERTS}  "
+  "INT4_BENCH_JSON=${INT4_BENCH_JSON}  "
+  "INT4_PREFETCH_AHEAD=${INT4_PREFETCH_AHEAD}  "
+  "BUILD_DML=${BUILD_DML}  "
+  "INT4_FUSE_BIAS=${INT4_FUSE_BIAS}"
+)
 
-# Global CPU flags (works for clang on Windows and gcc/clang on *nix)
+# ---- global CPU flags (clang/gcc on *nix, clang-cl on Windows) ----
 if (MSVC)
   add_compile_options(/O2 /fp:fast /arch:AVX2)
 else()
   add_compile_options(-O3 -mavx2 -mfma -mf16c -ffp-contract=fast)
 endif()
 
-# Make tunables visible to everything in this dir
+# ---- directory-wide tunables ----
 add_compile_definitions(
   $<$<BOOL:${INT4_ASSERTS}>:INT4_ASSERTS=1>
   $<$<BOOL:${INT4_BENCH_JSON}>:INT4_BENCH_JSON=1>
   INT4_PREFETCH_AHEAD=${INT4_PREFETCH_AHEAD}
+  $<$<BOOL:${INT4_FUSE_BIAS}>:INT4_FUSE_BIAS=1>
 )
 
 # ---- library ----
 add_library(qgemm_int4 STATIC
   qgemm_int4.cpp
   pack_int4.cpp
+  qgemm_q8_stub.cpp
 )
 target_include_directories(qgemm_int4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# ---- test / perf binaries (CPU) ----
+# ---- tests / perf (CPU) ----
 add_executable(test_qgemm tests/test_qgemm.cpp)
 target_link_libraries(test_qgemm PRIVATE qgemm_int4)
 
@@ -66,7 +76,7 @@ if (NOT TARGET test_perf_load_packed)
   target_link_libraries(test_perf_load_packed PRIVATE qgemm_int4 pack_loader)
 endif()
 
-# ---- correctness test (with threshold 7.2e-2) ----
+# ---- correctness test (threshold 7.2e-2) ----
 enable_testing()
 
 add_executable(test_qgemm_correctness tests/test_correctness.cpp)
@@ -78,3 +88,22 @@ endif()
 add_test(NAME correctness
   COMMAND test_qgemm_correctness --threshold 7.2e-2
 )
+
+# ---- optional: Q8 perf + bias epilogue timing ----
+add_executable(test_qgemm_perf_q8_mt tests/test_perf_q8_mt.cpp)
+target_link_libraries(test_qgemm_perf_q8_mt PRIVATE qgemm_int4)
+if (NOT MSVC)
+  target_compile_options(test_qgemm_perf_q8_mt PRIVATE -mavx2 -mfma -mf16c -O3)
+endif()
+
+add_executable(test_perf_bias tests/test_perf_bias.cpp)
+target_link_libraries(test_perf_bias PRIVATE qgemm_int4)
+if (NOT MSVC)
+  target_compile_options(test_perf_bias PRIVATE -mavx2 -mfma -mf16c -O3)
+endif()
+
+# ---- DML subtree (off by default) ----
+if (BUILD_DML)
+  add_subdirectory(dml/int4)
+endif()
+
