@@ -1,19 +1,33 @@
 // src/kernels/cpu/int4/model_interface.cpp
+// FIXED VERSION - No BLAS, no undefined functions
+
 #include "model_interface.h"
-#include "qgemm_int4.h"  // Your existing kernel header
 #include <cstring>
 #include <thread>
+#include <immintrin.h>
+
+// Declare your existing kernel functions
+extern "C" {
+    // These should match what's in your qgemm_int4.cpp
+    void qgemm_q8_mt(
+        const float* A,
+        const int8_t* B_q8, 
+        const float* scales,
+        const float* bias,  // Can be nullptr
+        float* C,
+        int M, int N, int K,
+        int group_size,
+        int num_threads
+    );
+}
 
 namespace edgemind {
 
 ModelKernel::ModelKernel() {
-    // Initialize your kernel system
-    init_int4_kernels();
+    // Nothing to initialize - kernels are just functions
 }
 
 Tensor ModelKernel::forward_linear(const Tensor& input, const LinearLayer& layer) {
-    // This is THE CRITICAL FUNCTION - bridges models to your kernels
-    
     int M = input.dims[0] * input.dims[1];  // Batch * Seq
     int K = layer.in_features;
     int N = layer.out_features;
@@ -37,12 +51,13 @@ Tensor ModelKernel::forward_linear(const Tensor& input, const LinearLayer& layer
             M, N, K
         );
     } else {
-        // Fallback to regular GEMM
-        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                   M, N, K, 1.0f,
-                   input.data_fp32, K,
-                   layer.weight.data_fp32, K,
-                   0.0f, output.data_fp32, N);
+        // Simple fallback GEMM (no BLAS needed)
+        simple_gemm_f32(
+            input.data_fp32,
+            layer.weight.data_fp32,
+            output.data_fp32,
+            M, N, K
+        );
     }
     
     // Add bias if present
@@ -57,6 +72,25 @@ Tensor ModelKernel::forward_linear(const Tensor& input, const LinearLayer& layer
     return output;
 }
 
+void ModelKernel::simple_gemm_f32(
+    const float* A, 
+    const float* B,
+    float* C,
+    int M, int N, int K
+) {
+    // Simple fallback for FP32 (not optimized, just works)
+    // A is M x K, B is K x N, C is M x N
+    for (int m = 0; m < M; m++) {
+        for (int n = 0; n < N; n++) {
+            float sum = 0.0f;
+            for (int k = 0; k < K; k++) {
+                sum += A[m * K + k] * B[k * N + n];
+            }
+            C[m * N + n] = sum;
+        }
+    }
+}
+
 void ModelKernel::gemm_int8(
     const float* A, 
     const int8_t* B_quant,
@@ -64,14 +98,18 @@ void ModelKernel::gemm_int8(
     float* C,
     int M, int N, int K
 ) {
-    // Call your existing kernel
-    // This is where your 125 GFLOP/s code runs!
+    // Call your existing Q8 kernel
     int num_threads = std::thread::hardware_concurrency();
     
-    qgemm_int8_mt(
-        A, B_quant, scales,
-        C, M, N, K,
-        64,  // group_size
+    // Call the actual kernel from qgemm_int4.cpp
+    qgemm_q8_mt(
+        A,           // Input activations
+        B_quant,     // Quantized weights
+        scales,      // Scales
+        nullptr,     // No bias in this path
+        C,           // Output
+        M, N, K,
+        64,          // group_size
         num_threads
     );
 }

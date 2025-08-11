@@ -46,6 +46,14 @@ public:
         int M, int N, int K
     );
     
+    // ADD THIS - Simple fallback for FP32
+    void simple_gemm_f32(
+        const float* A, 
+        const float* B,
+        float* C,
+        int M, int N, int K
+    );
+    
 private:
     void* kernel_handle;  // Your compiled kernel library
 };
