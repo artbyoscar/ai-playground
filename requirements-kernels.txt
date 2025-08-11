@@ -1,0 +1,7 @@
+## requirements-kernels.txt (Just for kernel testing)
+numpy>=1.24.0
+scipy>=1.11.0
+psutil>=5.9.0
+matplotlib>=3.7.0
+rich>=13.6.0
+tqdm>=4.66.0

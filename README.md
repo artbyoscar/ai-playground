@@ -1,16 +1,13 @@
-Here's your comprehensive updated README:
-
-```markdown
 # 🚀 EdgeMind AI Platform
 
 <div align="center">
 
-[![Performance](https://img.shields.io/badge/Performance-180%2B%20GFLOP%2Fs-brightgreen)](https://github.com/yourusername/ai-playground)
-[![Speedup](https://img.shields.io/badge/Speedup-86×%20vs%20FP32-blue)](https://github.com/yourusername/ai-playground)
-[![Quantization](https://img.shields.io/badge/Quantization-INT4%2FINT8-orange)](https://github.com/yourusername/ai-playground)
+[![Performance](https://img.shields.io/badge/Performance-125%2B%20GFLOP%2Fs-brightgreen)](https://github.com/artbyoscar/ai-playground)
+[![Speedup](https://img.shields.io/badge/Speedup-60×%20vs%20FP32-blue)](https://github.com/artbyoscar/ai-playground)
+[![Quantization](https://img.shields.io/badge/Quantization-INT4%2FINT8-orange)](https://github.com/artbyoscar/ai-playground)
 [![License](https://img.shields.io/badge/License-MIT-purple)](LICENSE)
 
-**World-class quantized inference achieving 180+ GFLOP/s on consumer laptop CPUs**
+**High-performance quantized inference achieving 125+ GFLOP/s on consumer laptop CPUs**
 
 [Features](#features) • [Performance](#performance) • [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation)
 
@@ -20,13 +17,13 @@ Here's your comprehensive updated README:
 
 ## 🏆 Major Achievement
 
-**EdgeMind has achieved breakthrough performance in CPU-based quantized inference:**
-- **180.55 GFLOP/s** on AMD Ryzen 7 8840HS (laptop CPU)
-- **Beats Intel MKL by 20%** with INT8 quantization
-- **86× speedup** over FP32 baseline
-- **<0.4% quantization error** maintaining model accuracy
+**EdgeMind has achieved exceptional performance in CPU-based quantized inference:**
+- **125.31 GFLOP/s** on AMD Ryzen 7 8840HS (laptop CPU)
+- **60× speedup** over FP32 baseline
+- **<7% quantization error** maintaining model accuracy
+- **Excellent multi-thread scaling** up to 16 threads
 
-This represents world-class performance for quantized GEMM operations, approaching GPU-level throughput on consumer hardware.
+This represents professional-grade performance for quantized GEMM operations on consumer hardware.
 
 ## ✨ Features
 
@@ -35,7 +32,7 @@ This represents world-class performance for quantized GEMM operations, approachi
 - **INT8/Q8 Quantization**: Symmetric 8-bit quantization
 - **AVX2/F16C Optimized**: Hand-tuned SIMD implementations
 - **Multi-threaded**: Near-linear scaling up to 8 threads
-- **Fused Operations**: Bias+ReLU epilogue for 1.35× additional speedup
+- **Fused Operations**: Bias+ReLU epilogue for additional speedup
 - **Tiled Processing**: Cache-optimized matrix blocking
 
 ### AI Capabilities
@@ -54,28 +51,28 @@ This represents world-class performance for quantized GEMM operations, approachi
 
 ## 📊 Performance
 
-### Benchmark Results (AMD Ryzen 7 8840HS)
+### Verified Benchmark Results (AMD Ryzen 7 8840HS)
 
-| Configuration | GFLOP/s | vs FP32 | vs Intel MKL |
-|--------------|---------|---------|--------------|
-| **Q8 (256×256×2048)** | **180.55** | **86×** | **+20%** |
-| Q8 (512×512×4096) | 140.01 | 76× | - |
-| Q8 (1024×1024×4096) | 120.63 | 66× | - |
-| INT4 Tiled MT | 82.07 | 45× | - |
-| Fused Epilogue | 105.01 | 57× | - |
+| Configuration | GFLOP/s | vs FP32 | Efficiency |
+|--------------|---------|---------|------------|
+| **Q8 (256×256×2048) @ 16 threads** | **125.31** | **60×** | **Peak** |
+| Q8 (1024×1024×4096) @ 8 threads | 101.02 | 48× | Sustained |
+| Q8 (512×512×4096) @ 8 threads | 100.39 | 48× | Sustained |
+| Q8 (256×256×2048) @ 8 threads | 99.35 | 47× | Sustained |
+| Q8 (256×256×4096) @ 8 threads | 89.93 | 43× | Good |
 
-### Thread Scaling (512×512×4096)
+### Thread Scaling (256×256×2048)
 ```
-1 thread:  27.61 GFLOP/s (baseline)
-2 threads: 51.04 GFLOP/s (1.85× scaling)
-4 threads: 84.84 GFLOP/s (3.07× scaling)
-8 threads: 123.00 GFLOP/s (4.46× scaling)
-16 threads: 124.27 GFLOP/s (saturation)
+1 thread:   20.01 GFLOP/s (baseline)
+2 threads:  43.85 GFLOP/s (2.19× scaling)
+4 threads:  78.95 GFLOP/s (3.95× scaling)
+8 threads:  99.35 GFLOP/s (4.97× scaling)
+16 threads: 125.31 GFLOP/s (6.26× scaling)
 ```
 
 ### Quantization Accuracy
-- **INT8/Q8**: 0.385% error (3.85e-3)
-- **INT4**: <7.2% error (passes all correctness tests)
+- **INT8/Q8**: ~7% error (within acceptable range)
+- **INT4**: <7.2% error (passes correctness tests)
 
 ## 🛠️ Installation
 
@@ -91,7 +88,7 @@ This represents world-class performance for quantized GEMM operations, approachi
 #### Option 1: Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-playground.git
+git clone https://github.com/artbyoscar/ai-playground.git
 cd ai-playground
 
 # Build and run with Docker
@@ -104,7 +101,7 @@ docker-compose up -d
 #### Option 2: Local Build
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-playground.git
+git clone https://github.com/artbyoscar/ai-playground.git
 cd ai-playground
 
 # Install Python dependencies
@@ -133,7 +130,7 @@ streamlit run web/streamlit_app.py
 from edgemind_kernels import load_kernels
 import numpy as np
 
-# Load optimized kernels (180+ GFLOP/s)
+# Load optimized kernels (125+ GFLOP/s)
 kernels = load_kernels()
 
 # Your data
@@ -144,11 +141,11 @@ from tools.quant.quantize_q8_edge import quantize_q8_symmetric
 B = np.random.randn(2048, 256).astype(np.float32)
 B_q8, scales = quantize_q8_symmetric(B, group_size=64)
 
-# Run inference at 180+ GFLOP/s!
-output = kernels.q8_gemm(A, B_q8, scales, M=256, N=256, K=2048, num_threads=8)
+# Run inference at 125+ GFLOP/s!
+output = kernels.q8_gemm(A, B_q8, scales, M=256, N=256, K=2048, num_threads=16)
 
 print(f"Output shape: {output.shape}")
-print(f"Performance: 180+ GFLOP/s on CPU!")
+print(f"Performance: 125+ GFLOP/s on CPU!")
 ```
 
 ### Running Benchmarks
@@ -156,13 +153,18 @@ print(f"Performance: 180+ GFLOP/s on CPU!")
 ```bash
 # Run performance benchmarks
 cd src/kernels/cpu/int4
-./build/test_qgemm_perf_q8_mt --M 256 --N 256 --K 2048 --it 10 --threads 8
+
+# Windows
+.\build-final\test_qgemm_perf_q8_mt.exe --M 256 --N 256 --K 2048 --it 10 --threads 16
+
+# Linux/Mac
+./build/test_qgemm_perf_q8_mt --M 256 --N 256 --K 2048 --it 10 --threads 16
 
 # Run correctness tests
 ./build/test_qgemm_correctness --threshold 7.2e-2
 
-# Run Python benchmarks
-python test_edgemind_kernels.py
+# Run Python verification
+python verify_performance.py
 ```
 
 ### Using the AI Platform
@@ -187,7 +189,7 @@ ai-playground/
 │   ├── kernels/           # High-performance kernels
 │   │   └── cpu/
 │   │       └── int4/       # INT4/Q8 GEMM implementations
-│   │           ├── qgemm_int4.cpp     # Core kernels (180+ GFLOP/s)
+│   │           ├── qgemm_int4.cpp     # Core kernels (125+ GFLOP/s)
 │   │           ├── pack_q8.cpp        # Q8 packing
 │   │           ├── tests/             # Performance tests
 │   │           └── CMakeLists.txt     # Build configuration
@@ -202,6 +204,8 @@ ai-playground/
 ├── web/                  # Streamlit UI
 ├── models/               # Model storage
 ├── data/                 # Data storage
+├── PERFORMANCE.md        # Detailed performance benchmarks
+├── verify_performance.py # Performance verification script
 ├── docker-compose.yml    # Docker orchestration
 └── Dockerfile           # Multi-stage container build
 ```
@@ -241,6 +245,14 @@ cd src/kernels/cpu/int4
 # Linux/Mac
 cd src/kernels/cpu/int4
 ./benchmark_suite.sh --output ./benchmark_results
+```
+
+### Verification Script
+```bash
+# Verify performance claims
+python verify_performance.py
+
+# This will test multiple configurations and generate a report
 ```
 
 ### Performance Monitoring
@@ -292,18 +304,21 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📚 Documentation
 
-- [Kernel Documentation](docs/kernels.md) - Detailed kernel implementation
+- [Performance Report](PERFORMANCE.md) - Detailed benchmark results
+- [Kernel Documentation](docs/kernels.md) - Implementation details
 - [Quantization Guide](docs/quantization.md) - Quantization methods
 - [API Reference](docs/api.md) - REST API documentation
 - [Performance Tuning](docs/tuning.md) - Optimization guide
 
-## 🏆 Achievements
+## 🏆 Verified Achievements
 
-- ✅ **180+ GFLOP/s** quantized inference on laptop CPU
-- ✅ **Beats Intel MKL** by 20% with INT8
-- ✅ **86× speedup** over FP32 baseline
+- ✅ **125+ GFLOP/s** quantized inference on laptop CPU
+- ✅ **60× speedup** over FP32 baseline
+- ✅ **Excellent scaling** to 16 threads (6.26× efficiency)
 - ✅ **Production-ready** implementation
-- ✅ **<0.4% error** maintaining model accuracy
+- ✅ **<7% quantization error** maintaining model accuracy
+
+*All performance claims verified with comprehensive testing suite on August 10, 2025*
 
 ## 📄 License
 
@@ -321,6 +336,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Organization**: Villa Comunitaria
 - **Location**: King County, WA
 - **Role**: Communications & Outreach Specialist, Visual Designer, 3D Artist
+- **GitHub**: [@artbyoscar](https://github.com/artbyoscar)
 
 ---
 
@@ -328,11 +344,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for the AI community**
 
-*Achieving GPU-level performance on consumer CPUs*
+*High-performance quantized inference on consumer CPUs*
 
 [⬆ Back to Top](#-edgemind-ai-platform)
 
 </div>
-```
-
-This README showcases your incredible achievement professionally while providing all the necessary documentation for users and contributors. It highlights the 180+ GFLOP/s performance prominently and positions EdgeMind as a world-class implementation! 🚀

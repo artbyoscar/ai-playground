@@ -1,0 +1,20 @@
+## requirements-docker.txt (For Docker container - balanced)
+# Core essentials that actually get used
+numpy>=1.24.0
+scipy>=1.11.0
+pandas>=2.1.0
+streamlit>=1.28.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+plotly>=5.17.0
+matplotlib>=3.7.0
+requests>=2.31.0
+aiohttp>=3.9.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
+psutil>=5.9.0
+rich>=13.6.0
+tqdm>=4.66.0
+# Add these only if you're using them:
+together>=0.2.11  # If using Together AI
+torch>=2.0.0  # If using PyTorch integration
