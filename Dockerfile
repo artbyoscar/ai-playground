@@ -24,8 +24,7 @@ RUN cmake -B build -G Ninja \
     && cmake --build build
 
 # Stage 2: Python Builder
-# Using bookworm-slim for better security (newer base)
-FROM python:3.11-slim-bookworm AS python-builder
+FROM python:3.12-slim AS python-builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -45,7 +44,7 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install core requirements (minimal set for performance)
+# Install core requirements
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir \
     numpy>=1.24.0 \
@@ -65,26 +64,34 @@ RUN pip install --upgrade pip && \
     tqdm>=4.66.0 \
     && pip cache purge
 
-# Stage 3: Runtime (IMPORTANT: Named stage!)
-FROM python:3.11-slim-bookworm AS runtime
+# Stage 3: Runtime
+FROM python:3.12-slim AS runtime
 
 # Install runtime dependencies and security updates
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
     curl \
     libgomp1 \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create non-root user and directories
 RUN useradd -m -u 1000 edgemind && \
     mkdir -p /app /app/models /app/data /app/kernels /app/tools && \
     chown -R edgemind:edgemind /app
 
-# Copy built kernels from kernel-builder (FIXED: Added trailing /)
-COPY --from=kernel-builder --chown=edgemind:edgemind /build/kernels/build/*.a /app/kernels/ || true
-COPY --from=kernel-builder --chown=edgemind:edgemind /build/kernels/build/*.so /app/kernels/ || true
-# Copy header files separately (FIXED: Added trailing /)
-COPY --from=kernel-builder --chown=edgemind:edgemind /build/kernels/*.h /app/kernels/ || true
+# Copy built kernels from kernel-builder
+COPY --from=kernel-builder --chown=edgemind:edgemind /build/kernels/build /tmp/kernels-build
+RUN find /tmp/kernels-build -name "*.a" -exec cp {} /app/kernels/ \; 2>/dev/null || true && \
+    find /tmp/kernels-build -name "*.so" -exec cp {} /app/kernels/ \; 2>/dev/null || true && \
+    rm -rf /tmp/kernels-build
+
+# Copy headers
+COPY --from=kernel-builder --chown=edgemind:edgemind /build/kernels /tmp/kernels-src
+RUN find /tmp/kernels-src -maxdepth 1 -name "*.h" -exec cp {} /app/kernels/ \; 2>/dev/null || true && \
+    find /tmp/kernels-src -maxdepth 1 -name "*.hpp" -exec cp {} /app/kernels/ \; 2>/dev/null || true && \
+    rm -rf /tmp/kernels-src
 
 # Copy virtual environment from python-builder
 COPY --from=python-builder /opt/venv /opt/venv
@@ -93,85 +100,21 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Set working directory
 WORKDIR /app
 
-# Copy application code
+# Copy application code (includes edgemind_kernels.py and entrypoint.sh)
 COPY --chown=edgemind:edgemind . .
 
-# Create kernel wrapper library
-RUN echo '#!/usr/bin/env python3\n\
-import ctypes\n\
-import numpy as np\n\
-from pathlib import Path\n\
-import platform\n\
-\n\
-class EdgeMindKernels:\n\
-    def __init__(self, lib_path=None):\n\
-        if lib_path is None:\n\
-            lib_candidates = [\n\
-                Path("/app/kernels/libqgemm_int4.so"),\n\
-                Path("/app/kernels/qgemm_int4.so"),\n\
-                Path("/app/src/kernels/cpu/int4/build/libqgemm_int4.so")\n\
-            ]\n\
-            for candidate in lib_candidates:\n\
-                if candidate.exists():\n\
-                    lib_path = candidate\n\
-                    break\n\
-            else:\n\
-                print("Warning: EdgeMind kernel library not found, using fallback")\n\
-                return\n\
-        \n\
-        self.lib = ctypes.CDLL(str(lib_path))\n\
-        self._setup_functions()\n\
-    \n\
-    def _setup_functions(self):\n\
-        # Setup function signatures\n\
-        pass\n\
-    \n\
-    def q8_gemm(self, A, B_q8, scales, M, N, K, group_size=64, num_threads=8):\n\
-        """High-performance Q8 GEMM: 125+ GFLOP/s"""\n\
-        # Implementation\n\
-        return np.zeros((M, N), dtype=np.float32)\n\
-\n\
-def load_kernels():\n\
-    """Load EdgeMind high-performance kernels"""\n\
-    try:\n\
-        return EdgeMindKernels()\n\
-    except Exception as e:\n\
-        print(f"Warning: Kernels not available: {e}")\n\
-        return None\n' > /app/edgemind_kernels.py
+# Ensure entrypoint is executable
+RUN chmod +x /app/entrypoint.sh
 
 # Environment variables
 ENV PYTHONPATH=/app \
-    LD_LIBRARY_PATH=/app/kernels \
+    LD_LIBRARY_PATH=/app/kernels:/app/src/kernels/cpu/int4/build \
     EDGEMIND_KERNELS_PATH=/app/kernels \
     STREAMLIT_SERVER_PORT=8501 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    EDGEMIND_PERFORMANCE_MODE=1
-
-# Create startup script
-RUN echo '#!/bin/bash\n\
-echo "🚀 EdgeMind Platform Starting..."\n\
-echo "📊 High-Performance Kernels: Enabled (125+ GFLOP/s)"\n\
-echo "🔧 CPU Optimization: AVX2/F16C"\n\
-echo ""\n\
-\n\
-# Check if kernels are available\n\
-if [ -f "/app/kernels/libqgemm_int4.so" ]; then\n\
-    echo "✅ Kernels loaded successfully"\n\
-else\n\
-    echo "⚠️  Kernels not found, using fallback"\n\
-fi\n\
-\n\
-# Start based on environment variable or default\n\
-if [ "$EDGEMIND_MODE" = "api" ]; then\n\
-    echo "Starting FastAPI server..."\n\
-    exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload\n\
-elif [ "$EDGEMIND_MODE" = "benchmark" ]; then\n\
-    echo "Running benchmarks..."\n\
-    exec python test_edgemind_kernels.py\n\
-else\n\
-    echo "Starting Streamlit UI..."\n\
-    exec streamlit run ${STREAMLIT_APP:-web/streamlit_app.py}\n\
-fi\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+    EDGEMIND_PERFORMANCE_MODE=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # Switch to non-root user
 USER edgemind
